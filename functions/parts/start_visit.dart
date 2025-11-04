@@ -8,34 +8,15 @@ import 'package:shaylan_agent/methods/gridview.dart';
 import 'package:shaylan_agent/models/static_data.dart';
 import 'package:shaylan_agent/models/visit.dart';
 import 'package:shaylan_agent/pages/inventor/inventor.dart';
+import 'package:shaylan_agent/pages/inventor/inventor_new_page.dart';
 import 'package:shaylan_agent/providers/pages/customers.dart';
 
-/* Future<void> startVisit(String cardCode, WidgetRef ref, BuildContext context) async {
-  Position position = await Geolocator.getCurrentPosition();
-  String cardName = await getCreditReportLineClientByCardCode(cardCode);
-
-  VisitModel visit = VisitModel(
-    startTime: DateTime.now().toIso8601String(),
-    latitude: position.latitude,
-    longitude: position.longitude,
-    cardCode: cardCode,
-    cardName: cardName,
-    status: VisitPaymentStatus.dontSent,
-  );
-
-  int visitID = await createVisit(visit);
-
-  ref.read(loadStartVisitProvider.notifier).state = false;
-  if (context.mounted) {
-    navigatorPushMethod(
-      context,
-      InventorPage(visitID: visitID, cardCode: cardCode),
-      false,
-    );
-  }
-} */
-
-Future<void> startVisit(String cardCode, WidgetRef ref, BuildContext context) async {
+Future<void> startVisit(
+  String cardCode,
+  WidgetRef ref,
+  BuildContext context,
+  {required String visitType}
+) async {
   const double defaultLatitude = AutoPosition.defaultLatitude;
   const double defaultLongitude = AutoPosition.defaultLongitude;
   
@@ -96,10 +77,18 @@ Future<void> startVisit(String cardCode, WidgetRef ref, BuildContext context) as
 
   ref.read(loadStartVisitProvider.notifier).state = false;
   if (context.mounted) {
-    navigatorPushMethod(
-      context,
-      InventorPage(visitID: visitID, cardCode: cardCode),
-      false,
-    );
+    if (visitType == "oldVisitType") {
+      navigatorPushMethod(
+        context,
+        InventorPage(visitID: visitID, cardCode: cardCode),
+        false,
+      );
+    } else {
+      navigatorPushMethod(
+        context,
+        InventorNewPage(visitID: visitID, cardCode: cardCode),
+        false,
+      );
+    }
   }
 }
