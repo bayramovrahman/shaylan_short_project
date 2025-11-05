@@ -5,17 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:shaylan_agent/models/user.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:shaylan_agent/methods/gridview.dart';
+import 'package:shaylan_agent/models/visit_step.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shaylan_agent/pages/credit_reports/new_credit_reports.dart';
-import 'package:shaylan_agent/pages/visit_step_one.dart';
 import 'package:shaylan_agent/models/inventor_image.dart';
 import 'package:shaylan_agent/functions/file_upload.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shaylan_agent/database/functions/user.dart';
 import 'package:shaylan_agent/database/functions/visit.dart';
+import 'package:shaylan_agent/database/functions/visit_step.dart';
 import 'package:shaylan_agent/providers/database/inventor_image.dart';
 import 'package:shaylan_agent/database/functions/inventor_images.dart';
+import 'package:shaylan_agent/pages/credit_reports/new_credit_reports.dart';
 
 class InventorNewPage extends ConsumerStatefulWidget {
   const InventorNewPage({
@@ -32,10 +33,9 @@ class InventorNewPage extends ConsumerStatefulWidget {
 }
 
 class _InventorNewPageState extends ConsumerState<InventorNewPage> {
-  // Just empty column
-
   bool hasInventor = false;
   bool hasContract = true;
+  bool isProcessing = false;
 
   Future<void> _takePhoto() async {
     User user = await getUser();
@@ -54,9 +54,94 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
     ref.invalidate(getInventorImagesByVisitIDProvider(widget.visitID));
   }
 
+  Future<void> _completeInventorStepsAndProceed() async {
+    if (isProcessing) return;
+
+    setState(() {
+      isProcessing = true;
+    });
+
+    try {
+      var lang = AppLocalizations.of(context)!;
+      String currentTime = DateTime.now().toIso8601String();
+
+      // Update visit with inventor information
+      if (hasInventor) {
+        await updateVisitHasInventor(1);
+        await updateVisitHasInventorContract(hasContract ? 1 : 0);
+      } else {
+        await updateVisitHasInventor(0);
+      }
+
+      // Create Step 1: Reconciliation of Mutual Settlements
+      VisitStepModel step1 = VisitStepModel(
+        startTime: currentTime,
+        name: 'step 1',
+        visitID: widget.visitID,
+        description: lang.reconciliationOfMutualSettlements,
+      );
+      await createVisitStep(step1);
+
+      // Immediately end Step 1
+      await setEndTimeToVisitStep(widget.visitID, 'step 1', currentTime);
+
+      // Create Step 2: Work on Special Tasks
+      VisitStepModel step2 = VisitStepModel(
+        startTime: currentTime,
+        name: 'step 2',
+        visitID: widget.visitID,
+        description: lang.workOnSpecialTasks,
+      );
+      await createVisitStep(step2);
+
+      // Set can pay to 'Y' for step 2
+      await setCanPayToVisitStep(widget.visitID, 'step 2', 'Y');
+
+      // End Step 2
+      await setEndTimeToVisitStep(widget.visitID, 'step 2', currentTime);
+
+      // Create Step 3: Collection of Payment
+      VisitStepModel step3 = VisitStepModel(
+        startTime: currentTime,
+        name: 'step 3',
+        visitID: widget.visitID,
+        description: lang.collectionOfPayment,
+      );
+      await createVisitStep(step3);
+
+      // Navigate to NewCreditReportsPage
+      if (context.mounted) {
+        navigatorPushMethod(
+          context,
+          NewCreditReportsPage(
+            visitID: widget.visitID,
+            cardCode: widget.cardCode,
+          ),
+          false,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error completing inventor steps: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isProcessing = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    debugPrint("-----------onInventorPage");
+    debugPrint("-----------onInventorNewPage");
     var lang = AppLocalizations.of(context)!;
     final inventorImages = ref.watch(
       getInventorImagesByVisitIDProvider(widget.visitID),
@@ -381,50 +466,36 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
               borderRadius: BorderRadius.circular(8.0.r),
             ),
           ),
-          onPressed: () async {
-            if (hasInventor) {
-              await updateVisitHasInventor(1);
-              await updateVisitHasInventorContract(hasContract ? 1 : 0);
-              if (context.mounted) {
-                navigatorPushMethod(context, NewCreditReportsPage(), false);
-                /* navigatorPushMethod(
-                  context,
-                  VisitStepOnePage(visitID: widget.visitID),
-                  false,
-                ); */
-              }
-            } else {
-              await updateVisitHasInventor(0);
-              if (context.mounted) {
-                navigatorPushMethod(context, NewCreditReportsPage(), false);
-                /* navigatorPushMethod(
-                  context,
-                  VisitStepOnePage(visitID: widget.visitID),
-                  false,
-                ); */
-              }
-            }
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                lang.next,
-                style: TextStyle(
-                  fontSize: 18.0.sp,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppFonts.monserratBold,
+          onPressed: isProcessing ? null : _completeInventorStepsAndProceed,
+          child: isProcessing
+              ? SizedBox(
+                  height: 20.h,
+                  width: 20.w,
+                  child: const CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      lang.next,
+                      style: TextStyle(
+                        fontSize: 18.0.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.white,
-                size: 20,
-              ),
-            ],
-          ),
         ),
       ),
     );

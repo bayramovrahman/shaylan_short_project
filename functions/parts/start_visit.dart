@@ -14,14 +14,14 @@ import 'package:shaylan_agent/providers/pages/customers.dart';
 Future<void> startVisit(
   String cardCode,
   WidgetRef ref,
-  BuildContext context,
-  {required String visitType}
-) async {
+  BuildContext context, {
+  required String visitType,
+}) async {
   const double defaultLatitude = AutoPosition.defaultLatitude;
   const double defaultLongitude = AutoPosition.defaultLongitude;
-  
+
   Position position;
-  
+
   try {
     position = await Geolocator.getCurrentPosition().timeout(
       const Duration(seconds: 15),
@@ -40,11 +40,14 @@ Future<void> startVisit(
         );
       },
     );
-    
-    if (position.latitude == defaultLatitude && position.longitude == defaultLongitude) {
+
+    if (position.latitude == defaultLatitude &&
+        position.longitude == defaultLongitude) {
       debugPrint('Using default coordinates after timeout');
     } else {
-      debugPrint('Using actual GPS coordinates: ${position.latitude}, ${position.longitude}');
+      debugPrint(
+        'Using actual GPS coordinates: ${position.latitude}, ${position.longitude}',
+      );
     }
   } catch (e) {
     debugPrint('Error getting location: $e');

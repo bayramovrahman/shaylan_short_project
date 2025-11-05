@@ -1,38 +1,57 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:iconly/iconly.dart';
+import 'package:lottie/lottie.dart';
+import 'package:shaylan_agent/app/app_colors.dart';
+import 'package:shaylan_agent/app/app_fonts.dart';
+import 'package:shaylan_agent/constants/asset_path.dart';
+import 'package:shaylan_agent/l10n/app_localizations.dart';
+import 'package:shaylan_agent/methods/gridview.dart';
+import 'package:shaylan_agent/pages/customer_balance_history/customer_balance_history.dart';
 
 class NewCreditReportsPage extends StatefulWidget {
-  const NewCreditReportsPage({Key? key}) : super(key: key);
+  const NewCreditReportsPage({
+    super.key,
+    required this.visitID,
+    required this.cardCode,
+  });
+
+  final int visitID;
+  final String cardCode;
 
   @override
   State<NewCreditReportsPage> createState() => _NewCreditReportsPageState();
 }
 
-class _NewCreditReportsPageState extends State<NewCreditReportsPage> with SingleTickerProviderStateMixin {
+class _NewCreditReportsPageState extends State<NewCreditReportsPage>
+    with SingleTickerProviderStateMixin {
+  // Just empty column
+
   late AnimationController _animationController;
   late Animation<double> _animation;
 
-  // Mysal fatura maglumatlary
   List<Invoice> invoices = [
     Invoice(
-      invoiceNumber: 'FAT-2025-001',
+      invoiceNumber: '№7816511',
       amount: 1250.00,
       date: DateTime(2025, 11, 1),
       isPaid: true,
     ),
     Invoice(
-      invoiceNumber: 'FAT-2025-002',
+      invoiceNumber: '№8724565',
       amount: 3400.50,
       date: DateTime(2025, 11, 2),
       isPaid: true,
     ),
     Invoice(
-      invoiceNumber: 'FAT-2025-003',
+      invoiceNumber: '№3565455',
       amount: 890.75,
       date: DateTime(2025, 11, 3),
       isPaid: true,
     ),
     Invoice(
-      invoiceNumber: 'FAT-2025-004',
+      invoiceNumber: '№4365346',
       amount: 2150.00,
       date: DateTime(2025, 11, 4),
       isPaid: true,
@@ -48,10 +67,11 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
     )..repeat(reverse: true);
 
     _animation = Tween<double>(begin: -0.1, end: 0.1).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    debugPrint(
+      'NewCreditReportsPage - visitID: ${widget.visitID}, cardCode: ${widget.cardCode}',
     );
   }
 
@@ -63,37 +83,62 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
 
   @override
   Widget build(BuildContext context) {
+    var lang = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Kredit hasabat',
+        title: Text(
+          lang.creditReport,
           style: TextStyle(
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
-            fontSize: 22,
+            fontFamily: AppFonts.monserratBold,
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.teal[700],
+        backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: Icon(
+            IconlyLight.arrow_left_2,
+            color: Colors.white,
+            size: 24.sp,
+          ),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
         actions: [
           AnimatedBuilder(
             animation: _animation,
             builder: (context, child) {
               return Transform.rotate(
                 angle: _animation.value,
-                child: Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.receipt_long,
-                    size: 28,
-                    color: Colors.white,
+                child: GestureDetector(
+                  onTap: () {
+                    navigatorPushMethod(
+                      context,
+                      CustomerBalanceHistoryPage(
+                        cardCode: widget.cardCode,
+                        visitID: widget.visitID,
+                        afterPayment: false,
+                      ),
+                      false,
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.receipt_long,
+                      size: 28.sp,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               );
@@ -103,48 +148,70 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
       ),
       body: Column(
         children: [
-          // Ýokary maglumat karty
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.teal[700]!, Colors.teal[500]!],
+                colors: [
+                  Theme.of(context).primaryColor,
+                  Theme.of(context).primaryColor,
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
-            padding: const EdgeInsets.all(20),
+            padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
             child: Column(
               children: [
-                const Text(
-                  'Jemi Töleg',
+                Text(
+                  'Jemi Alynan Töleg',
                   style: TextStyle(
+                    fontSize: 14.sp,
                     color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${_calculateTotal().toStringAsFixed(2)} ₺',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
                     fontWeight: FontWeight.bold,
+                    fontFamily: AppFonts.monserratBold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 5.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 45.w,
+                      height: 45.h,
+                      child: Lottie.asset(
+                        AssetPath.moneyAnimation,
+                        repeat: false,
+                        fit: BoxFit.contain,
+                        animate: true,
+                      ),
+                    ),
+                    Text(
+                      '${_calculateTotal().toStringAsFixed(2)} TMT',
+                      style: TextStyle(
+                        fontSize: 28.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 5.h),
                 Text(
-                  '${invoices.length} Fatura',
-                  style: const TextStyle(
+                  '${invoices.length} ${lang.invoice}',
+                  style: TextStyle(
+                    fontSize: 14.sp,
                     color: Colors.white70,
-                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppFonts.monserratBold,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Fatura sanawy
           Expanded(
             child: invoices.isEmpty
                 ? Center(
@@ -153,15 +220,17 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
                       children: [
                         Icon(
                           Icons.receipt_long_outlined,
-                          size: 80,
-                          color: Colors.grey[400],
+                          size: 80.sp,
+                          color: Theme.of(context).primaryColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Entek fatura ýok',
+                          'Hiç hili töleg girizilmedi',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppFonts.monserratBold,
                           ),
                         ),
                       ],
@@ -179,12 +248,12 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
 
           // Aşaky düwmeler
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),
@@ -194,61 +263,46 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
               child: Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Töleg giriş işlemi
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Töleg girizilýär...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.payment_outlined),
-                      label: const Text(
-                        'Töleg Giriz',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    child: ElevatedButton(
+                      onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal[700],
+                        backgroundColor: Theme.of(context).primaryColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                         elevation: 2,
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        // Wiziti tamamla işlemi
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Wizit tamamlanýar...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text(
+                      child: Text(
                         'Wiziti Tamamla',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
+                          fontFamily: AppFonts.monserratBold,
                         ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.teal[700],
-                        side: BorderSide(color: Colors.teal[700]!, width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        elevation: 2,
+                      ),
+                      child: Text(
+                        'Töleg Giriz',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppFonts.monserratBold,
                         ),
                       ),
                     ),
@@ -276,24 +330,7 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
         ),
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 24),
-        child: const Row(
-          children: [
-            Icon(
-              Icons.delete_outline,
-              color: Colors.white,
-              size: 32,
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Poz',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
+        child: Icon(Icons.delete_outline, color: Colors.white, size: 32),
       ),
       confirmDismiss: (direction) async {
         // Onay dialogu göster
@@ -313,10 +350,7 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(
                     'Ýok',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
                   ),
                 ),
                 ElevatedButton(
@@ -371,7 +405,7 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -380,10 +414,7 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              // Fatura jikme-jigi göster
-              _showInvoiceDetails(invoice);
-            },
+            onTap: () {},
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -391,21 +422,24 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
                 children: [
                   // Nyşan
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 42.w,
+                    height: 42.h,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.teal[400]!, Colors.teal[600]!],
+                        colors: [
+                          Theme.of(context).primaryColor,
+                          Theme.of(context).primaryColor,
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.receipt,
                       color: Colors.white,
-                      size: 28,
+                      size: 28.sp,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: 8.w),
 
                   // Maglumatlar
                   Expanded(
@@ -414,26 +448,29 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
                       children: [
                         Text(
                           invoice.invoiceNumber,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            fontFamily: AppFonts.monserratBold,
+                            color: Theme.of(context).primaryColor,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: 5.h),
                         Row(
                           children: [
                             Icon(
-                              Icons.calendar_today,
-                              size: 14,
-                              color: Colors.grey[500],
+                              CupertinoIcons.calendar,
+                              size: 14.sp,
+                              color: Colors.grey[800],
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 2.w),
                             Text(
                               _formatDate(invoice.date),
                               style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[500],
+                                fontSize: 13.sp,
+                                color: Colors.grey[800],
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppFonts.monserratBold,
                               ),
                             ),
                           ],
@@ -449,12 +486,13 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
                       Text(
                         '${invoice.amount.toStringAsFixed(2)} TMT',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal[700],
+                          fontFamily: AppFonts.monserratBold,
+                          color: Theme.of(context).primaryColor,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 5.h),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -465,11 +503,12 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Töleg Girizildi',
+                          'Pereçesleniýa',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
-                            color: Colors.green[700],
+                            color: AppColors.secondaryColor,
+                            fontFamily: AppFonts.monserratBold,
                           ),
                         ),
                       ),
@@ -490,62 +529,6 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage> with Single
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-  }
-
-  void _showInvoiceDetails(Invoice invoice) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Fatura Jikme-jiklikleri',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildDetailRow('Fatura №', invoice.invoiceNumber),
-            _buildDetailRow('Sene', _formatDate(invoice.date)),
-            _buildDetailRow('Möçber', '${invoice.amount.toStringAsFixed(2)} ₺'),
-            _buildDetailRow('Ýagdaý', 'Tölenildi'),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
