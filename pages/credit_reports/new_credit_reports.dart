@@ -9,6 +9,7 @@ import 'package:shaylan_agent/constants/asset_path.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:shaylan_agent/methods/gridview.dart';
 import 'package:shaylan_agent/pages/customer_balance_history/customer_balance_history.dart';
+import 'package:shaylan_agent/pages/customers_for_kollektor/last_visit_types/new_invoice_list_page.dart';
 
 class NewCreditReportsPage extends StatefulWidget {
   const NewCreditReportsPage({
@@ -287,7 +288,16 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
                   SizedBox(width: 8.w),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        navigatorPushMethod(
+                          context,
+                          NewInvoiceListPage(
+                            cardCode: widget.cardCode,
+                            visitID: widget.visitID,
+                          ),
+                          false,
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).primaryColor,
                         foregroundColor: Colors.white,
