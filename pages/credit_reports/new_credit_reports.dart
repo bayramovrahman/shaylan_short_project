@@ -7,6 +7,8 @@ import 'package:lottie/lottie.dart';
 import 'package:shaylan_agent/app/app_colors.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:shaylan_agent/constants/asset_path.dart';
+import 'package:shaylan_agent/database/functions/visit_payment.dart';
+import 'package:shaylan_agent/database/functions/visit_payment_invoice.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:shaylan_agent/methods/gridview.dart';
 import 'package:shaylan_agent/models/visit_payment.dart';
@@ -25,8 +27,7 @@ class NewCreditReportsPage extends ConsumerStatefulWidget {
   final String cardCode;
 
   @override
-  ConsumerState<NewCreditReportsPage> createState() =>
-      _NewCreditReportsPageState();
+  ConsumerState<NewCreditReportsPage> createState() => _NewCreditReportsPageState();
 }
 
 class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
@@ -57,11 +58,99 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
     super.dispose();
   }
 
+  String _getPaymentTypeText(String paymentType) {
+    switch (paymentType.toLowerCase()) {
+      case 'cash':
+        return 'Nagt';
+      case 'credit_cards':
+        return 'Terminal';
+      case 'bank':
+        return 'Pereçesleniýa';
+      default:
+        return paymentType;
+    }
+  }
+
+  Future<bool> _confirmDeletePayment(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          title: const Text('Töleg pozmak'),
+          content: const Text('Bu tölegi pozmak isleýärsiňizmi?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Ýok',
+                style: TextStyle(color: Colors.grey[600], fontSize: 16.sp),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              child: Text(
+                'Hawa, Poz',
+                style: TextStyle(fontSize: 16.sp),
+              ),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  Future<void> _deletePayment(VisitPayment payment) async {
+    try {
+      // Delete visit payment invoices first
+      await removeVisitPaymentInvoicesByInvPayId(payment.id!);
+      
+      // Then delete the visit payment
+      await removeVisitPaymentById(payment.id!);
+      
+      // Refresh providers
+      ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
+      ref.invalidate(getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Töleg pozuldy'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ýalňyşlyk: $e'),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
     
-    // Watch visit payments for this visit
     final visitPaymentsAsync = ref.watch(
       getVisitPaymentsByVisitIDProvider(widget.visitID),
     );
@@ -234,7 +323,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                       ),
               ),
 
-              // Bottom buttons
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
                 decoration: BoxDecoration(
@@ -344,59 +432,10 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
         child: Icon(Icons.delete_outline, color: Colors.white, size: 32.sp),
       ),
       confirmDismiss: (direction) async {
-        return await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              title: const Text('Töleg pozmak'),
-              content: Text(
-                'Bu tölegi pozmak isleýärsiňizmi?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                    'Ýok',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16.sp),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[600],
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                  ),
-                  child: Text(
-                    'Hawa, Poz',
-                    style: TextStyle(fontSize: 16.sp),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
+        return await _confirmDeletePayment(context);
       },
       onDismissed: (direction) async {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Töleg pozuldy'),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.red[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-          ),
-        );
-        
-        // Refresh the list
-        ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
+        await _deletePayment(payment);
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 12.h),
@@ -420,7 +459,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
               padding: EdgeInsets.all(16.w),
               child: Row(
                 children: [
-                  // Icon
                   Container(
                     width: 42.w,
                     height: 42.h,
@@ -441,7 +479,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                   ),
                   SizedBox(width: 8.w),
 
-                  // Payment details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,7 +516,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                     ),
                   ),
 
-                  // Amount and status
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -529,18 +565,5 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-  }
-
-  String _getPaymentTypeText(String paymentType) {
-    switch (paymentType) {
-      case 'nagt':
-        return 'Nagt';
-      case 'terminal':
-        return 'Terminal';
-      case 'pereçesleniya':
-        return 'Pereçesleniýa';
-      default:
-        return paymentType;
-    }
   }
 }

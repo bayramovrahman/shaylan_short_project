@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:iconly/iconly.dart';
 import 'package:flutter/material.dart';
 import 'package:shaylan_agent/models/user.dart';
@@ -53,142 +54,209 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
   @override
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.blue[600]!,
-            Colors.blue[800]!,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+    
+    // Get document entry
+    num docEntry = widget.creditReportLine.docEntryInv != 0
+        ? widget.creditReportLine.docEntryInv
+        : widget.creditReportLine.docEntryRin;
+    
+    // Watch payment invoices for this specific invoice
+    final paymentInvoicesAsync = ref.watch(
+      getVisitPaymentInvoicesByDocEntryProvider(docEntry),
+    );
+    
+    return paymentInvoicesAsync.when(
+      data: (paymentInvoices) {
+        // Calculate total paid amount for this invoice
+        num totalPaid = 0;
+        if (paymentInvoices.isNotEmpty) {
+          for (var invoice in paymentInvoices) {
+            totalPaid += invoice.sumApplied;
+          }
+        }
+        
+        // Calculate remaining balance
+        num remainingBalance = widget.creditReportLine.balance - totalPaid;
+        
+        return Container(
+          margin: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.blue[600]!,
+                Colors.blue[800]!,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.blue.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _showPaymentDialog(context),
-          borderRadius: BorderRadius.circular(16.r),
-          child: Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showPaymentDialog(context),
+              borderRadius: BorderRadius.circular(16.r),
+              child: Padding(
+                padding: EdgeInsets.all(16.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: EdgeInsets.all(6.w),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      child: Icon(
-                        Icons.receipt,
-                        color: Colors.white,
-                        size: 24.sp,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Faktura Nomeri",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: AppFonts.monserratBold,
-                            ),
-                          ),
-                          Text(
-                            '№${widget.creditReportLine.docNum}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppFonts.monserratBold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                _buildInfoRow(
-                  icon: Icons.mode_standby_sharp,
-                  label: lang.loanAmount,
-                  value: '${widget.creditReportLine.creditSum} TMT',
-                ),
-                SizedBox(height: 10.h),
-                _buildInfoRow(
-                  icon: Icons.payment,
-                  label: lang.paymentOption,
-                  value: widget.creditReportLine.paymentType,
-                ),
-                SizedBox(height: 10.h),
-                _buildInfoRow(
-                  icon: Icons.access_time,
-                  label: lang.expiredDay,
-                  value: '${widget.creditReportLine.expired} gün',
-                ),
-                SizedBox(height: 10.h),
-                _buildInfoRow(
-                  icon: IconlyBold.wallet,
-                  label: lang.remainder,
-                  value: '${widget.creditReportLine.balance} TMT',
-                  isHighlighted: true,
-                ),
-                SizedBox(height: 16.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.blue[700],
-                      padding: EdgeInsets.symmetric(vertical: 6.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: () => _showPaymentDialog(context),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Row(
                       children: [
-                        Icon(
-                          Icons.payment,
-                          size: 20.sp,
+                        Container(
+                          padding: EdgeInsets.all(6.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Icon(
+                            Icons.receipt,
+                            color: Colors.white,
+                            size: 24.sp,
+                          ),
                         ),
                         SizedBox(width: 8.w),
-                        Text(
-                          lang.payment,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16.sp,
-                            fontFamily: AppFonts.monserratBold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Faktura Nomeri",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: AppFonts.monserratBold,
+                                ),
+                              ),
+                              Text(
+                                '№${widget.creditReportLine.docNum}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppFonts.monserratBold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
+                    SizedBox(height: 10.h),
+                    _buildInfoRow(
+                      icon: Icons.mode_standby_sharp,
+                      label: lang.loanAmount,
+                      value: '${widget.creditReportLine.creditSum} TMT',
+                    ),
+                    SizedBox(height: 10.h),
+                    _buildInfoRow(
+                      icon: Icons.payment,
+                      label: lang.paymentOption,
+                      value: widget.creditReportLine.paymentType,
+                    ),
+                    SizedBox(height: 10.h),
+                    _buildInfoRow(
+                      icon: Icons.access_time,
+                      label: lang.expiredDay,
+                      value: '${widget.creditReportLine.expired} gün',
+                    ),
+                    SizedBox(height: 10.h),
+                    
+                    // Show paid amount if exists
+                    if (totalPaid > 0) ...[
+                      _buildInfoRow(
+                        icon: Icons.check_circle,
+                        label: 'Alynan Töleg',
+                        value: '${totalPaid.toStringAsFixed(2)} TMT',
+                        isHighlighted: true,
+                        highlightColor: Colors.green[300],
+                      ),
+                      SizedBox(height: 10.h),
+                    ],
+                    
+                    _buildInfoRow(
+                      icon: IconlyBold.wallet,
+                      label: lang.remainder,
+                      value: '${remainingBalance.toStringAsFixed(2)} TMT',
+                      isHighlighted: true,
+                    ),
+                    SizedBox(height: 16.h),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.blue[700],
+                          padding: EdgeInsets.symmetric(vertical: 6.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: remainingBalance > 0 
+                            ? () => _showPaymentDialog(context)
+                            : null,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.payment,
+                              size: 20.sp,
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              remainingBalance > 0 ? lang.payment : 'Doly Tölendi',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16.sp,
+                                fontFamily: AppFonts.monserratBold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        );
+      },
+      loading: () => _buildLoadingCard(),
+      error: (error, stack) => _buildErrorCard(error),
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+      decoration: BoxDecoration(
+        color: Colors.grey[300],
+        borderRadius: BorderRadius.circular(16.r),
       ),
+      height: 200.h,
+      child: const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildErrorCard(Object error) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+      decoration: BoxDecoration(
+        color: Colors.red[100],
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      padding: EdgeInsets.all(16.w),
+      child: Text('Ýalňyşlyk: $error'),
     );
   }
 
@@ -197,12 +265,15 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
     required String label,
     required String value,
     bool isHighlighted = false,
+    Color? highlightColor,
   }) {
     return Row(
       children: [
         Icon(
           icon,
-          color: isHighlighted ? Colors.yellow[500] : Colors.white70,
+          color: isHighlighted 
+              ? (highlightColor ?? Colors.yellow[500]) 
+              : Colors.white70,
           size: 18.sp,
         ),
         SizedBox(width: 8.w),
@@ -221,7 +292,9 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
         Text(
           value,
           style: TextStyle(
-            color: isHighlighted ? Colors.yellow[400] : Colors.white,
+            color: isHighlighted 
+                ? (highlightColor ?? Colors.yellow[400]) 
+                : Colors.white,
             fontSize: isHighlighted ? 15.sp : 14.sp,
             fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w600,
             fontFamily: AppFonts.monserratBold,
@@ -339,6 +412,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       // Refresh providers
       ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
       ref.invalidate(getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
+      ref.invalidate(getVisitPaymentInvoicesByDocEntryProvider(docEntry));
 
       if (context.mounted) {
         Navigator.of(context).pop();
@@ -366,241 +440,316 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     var lang = AppLocalizations.of(context)!;
     final terminalsAsync = ref.watch(getTerminalsProvider);
 
-    return AlertDialog(
+    return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
       ),
-      title: Text(
-        'Faktura №${widget.creditReportLine.docNum}',
-        style: TextStyle(
-          fontSize: 18.sp,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppFonts.monserratBold,
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
         ),
-      ),
-      content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${lang.remainder}: ${widget.creditReportLine.balance} TMT',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-                fontFamily: AppFonts.monserratBold,
-              ),
-            ),
-            SizedBox(height: 20.h),
-            
-            // Payment Type Dropdown
-            Text(
-              lang.paymentOption,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppFonts.monserratBold,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            DropdownButtonFormField<String>(
-              value: selectedPaymentType,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12.w,
-                  vertical: 8.h,
+            // Header
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16.r),
+                  topRight: Radius.circular(16.r),
                 ),
               ),
-              hint: Text('Töleg görnüşini saýlaň'),
-              items: [
-                DropdownMenuItem(
-                  value: VisitPaymentType.nagt,
-                  child: Text(lang.cashPayment),
-                ),
-                DropdownMenuItem(
-                  value: VisitPaymentType.terminal,
-                  child: Text(lang.terminal),
-                ),
-                DropdownMenuItem(
-                  value: VisitPaymentType.perecesleniya,
-                  child: Text(lang.enumeration),
-                ),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  selectedPaymentType = value;
-                  selectedTerminal = null;
-                });
-              },
-            ),
-            SizedBox(height: 16.h),
-
-            // Terminal Selection (only if payment type is terminal)
-            if (selectedPaymentType == VisitPaymentType.terminal) ...[
-              Text(
-                'Terminal',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppFonts.monserratBold,
-                ),
-              ),
-              SizedBox(height: 8.h),
-              terminalsAsync.when(
-                data: (terminals) {
-                  return DropdownButtonFormField<Terminal>(
-                    value: selectedTerminal,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 8.h,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Faktura №${widget.creditReportLine.docNum}',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                        color: Colors.white,
                       ),
                     ),
-                    hint: Text('Terminal saýlaň'),
-                    items: terminals.map((terminal) {
-                      return DropdownMenuItem(
-                        value: terminal,
-                        child: Text('${terminal.itemName} ${terminal.itemCode}'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedTerminal = value;
-                      });
-                    },
-                  );
-                },
-                loading: () => CircularProgressIndicator(),
-                error: (error, stack) => Text('Ýalňyşlyk: $error'),
-              ),
-              SizedBox(height: 16.h),
-
-              // Check Number Field
-              Text(
-                '${lang.checkNumber} *',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppFonts.monserratBold,
-                ),
-              ),
-              SizedBox(height: 8.h),
-              TextField(
-                controller: checkNumberController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 8.h,
+                  IconButton(
+                    icon: const Icon(CupertinoIcons.clear_circled, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  hintText: 'Çek nomerini giriziň',
-                ),
+                ],
               ),
-              SizedBox(height: 16.h),
-            ],
+            ),
 
-            // Amount Field
-            Text(
-              'Töleg möçberi *',
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppFonts.monserratBold,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            TextField(
-              controller: amountController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12.w,
-                  vertical: 8.h,
-                ),
-                hintText: 'Möçberi giriziň',
-                suffixText: 'TMT',
-              ),
-            ),
-            SizedBox(height: 16.h),
+            // Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(16.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${lang.remainder}: ${widget.creditReportLine.balance.toStringAsFixed(2)} TMT',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                    Text(
+                      lang.paymentOption,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    DropdownButtonFormField<String>(
+                      value: selectedPaymentType,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 8.h,
+                        ),
+                      ),
+                      hint: const Text('Töleg görnüşini saýlaň'),
+                      items: [
+                        DropdownMenuItem(
+                          value: VisitPaymentType.nagt,
+                          child: Text(lang.cashPayment),
+                        ),
+                        DropdownMenuItem(
+                          value: VisitPaymentType.terminal,
+                          child: Text(lang.terminal),
+                        ),
+                        DropdownMenuItem(
+                          value: VisitPaymentType.perecesleniya,
+                          child: Text(lang.enumeration),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPaymentType = value;
+                          selectedTerminal = null;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 12.h),
 
-            // Comment Field
-            Text(
-              lang.comment,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppFonts.monserratBold,
+                    // Terminal Selection
+                    if (selectedPaymentType == VisitPaymentType.terminal) ...[
+                      Text(
+                        'Terminal',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppFonts.monserratBold,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      terminalsAsync.when(
+                        data: (terminals) {
+                          return DropdownButtonFormField<Terminal>(
+                            value: selectedTerminal,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12.w,
+                                vertical: 8.h,
+                              ),
+                            ),
+                            hint: const Text('Terminal saýlaň'),
+                            items: terminals.map((terminal) {
+                              return DropdownMenuItem(
+                                value: terminal,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${terminal.itemName} ${terminal.itemCode}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      '${terminal.assetGroup} ${terminal.assetSerNo}',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 4.h),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                selectedTerminal = value;
+                              });
+                            },
+                          );
+                        },
+                        loading: () => const CircularProgressIndicator(),
+                        error: (error, stack) => Text('Ýalňyşlyk: $error'),
+                      ),
+                      SizedBox(height: 12.h),
+
+                      // Check Number Field
+                      Text(
+                        '${lang.checkNumber} *',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppFonts.monserratBold,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      TextField(
+                        controller: checkNumberController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 8.h,
+                          ),
+                          hintText: 'Çek nomerini giriziň',
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                    ],
+
+                    // Amount Field
+                    Text(
+                      'Töleg möçberi *',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 8.h,
+                        ),
+                        hintText: 'Möçberi giriziň',
+                        suffixText: 'TMT',
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+
+                    // Comment Field
+                    Text(
+                      lang.comment,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    TextField(
+                      controller: commentController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 8.h,
+                        ),
+                        hintText: 'Teswir giriziň',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            SizedBox(height: 8.h),
-            TextField(
-              controller: commentController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.r),
+
+            // Actions
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(16.r),
+                  bottomRight: Radius.circular(16.r),
                 ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12.w,
-                  vertical: 8.h,
-                ),
-                hintText: 'Teswir giriziň',
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    onPressed: isProcessing ? null : () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    child: Text(
+                      lang.cancel,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  ElevatedButton(
+                    onPressed: isProcessing ? null : () => _processPayment(context, lang),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    child: isProcessing
+                        ? SizedBox(
+                            height: 20.h,
+                            width: 20.w,
+                            child: const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            lang.payment,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppFonts.monserratBold,
+                            ),
+                          ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: isProcessing ? null : () => Navigator.of(context).pop(),
-          child: Text(
-            lang.cancel,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14.sp,
-            ),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: isProcessing ? null : () => _processPayment(context, lang),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-          ),
-          child: isProcessing
-              ? SizedBox(
-                  height: 20.h,
-                  width: 20.w,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-              : Text(
-                  lang.payment,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-        ),
-      ],
     );
   }
 }
