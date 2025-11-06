@@ -27,7 +27,8 @@ class NewCreditReportsPage extends ConsumerStatefulWidget {
   final String cardCode;
 
   @override
-  ConsumerState<NewCreditReportsPage> createState() => _NewCreditReportsPageState();
+  ConsumerState<NewCreditReportsPage> createState() =>
+      _NewCreditReportsPageState();
 }
 
 class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
@@ -111,16 +112,13 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
 
   Future<void> _deletePayment(VisitPayment payment) async {
     try {
-      // Delete visit payment invoices first
       await removeVisitPaymentInvoicesByInvPayId(payment.id!);
-      
-      // Then delete the visit payment
       await removeVisitPaymentById(payment.id!);
-      
-      // Refresh providers
+
       ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
       ref.invalidate(getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
-      
+
+      await Future.delayed(Duration.zero);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -417,7 +415,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
     List<VisitPayment> allPayments,
   ) {
     return Dismissible(
-      key: Key(payment.id.toString()),
+      key: Key('payment_${payment.id}_${DateTime.now().millisecondsSinceEpoch}'), // Unique key
       direction: DismissDirection.startToEnd,
       background: Container(
         margin: EdgeInsets.only(bottom: 12.h),
@@ -435,6 +433,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
         return await _confirmDeletePayment(context);
       },
       onDismissed: (direction) async {
+        // Delete immediately - providers will handle the rebuild
         await _deletePayment(payment);
       },
       child: Container(
@@ -478,7 +477,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                     ),
                   ),
                   SizedBox(width: 8.w),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,7 +513,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                       ],
                     ),
                   ),
-
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [

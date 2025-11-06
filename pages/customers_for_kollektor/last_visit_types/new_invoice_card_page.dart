@@ -8,6 +8,7 @@ import 'package:shaylan_agent/methods/snackbars.dart';
 import 'package:shaylan_agent/models/static_data.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shaylan_agent/models/visit_payment.dart';
+import 'package:shaylan_agent/providers/local_storadge.dart';
 import 'package:shaylan_agent/utilities/alert_utils.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:shaylan_agent/database/functions/user.dart';
@@ -321,6 +322,8 @@ class _PaymentDialog extends ConsumerStatefulWidget {
 }
 
 class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
+  // Just empty column
+
   final TextEditingController amountController = TextEditingController();
   final TextEditingController commentController = TextEditingController();
   final TextEditingController checkNumberController = TextEditingController();
@@ -328,6 +331,28 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   String? selectedPaymentType;
   Terminal? selectedTerminal;
   bool isProcessing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final savedTerminalSerNo = ref.read(selectedTerminalProvider);
+      if (savedTerminalSerNo.isNotEmpty) {
+        final terminalsAsync = ref.read(getTerminalsProvider);
+        terminalsAsync.whenData((terminals) {
+          final savedTerminal = terminals.firstWhere(
+            (t) => t.assetSerNo == savedTerminalSerNo,
+            orElse: () => Terminal.defaultTerminal(),
+          );
+          if (savedTerminal.assetSerNo.isNotEmpty) {
+            setState(() {
+              selectedTerminal = savedTerminal;
+            });
+          }
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -416,10 +441,10 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
       if (context.mounted) {
         Navigator.of(context).pop();
-        AlertUtils.showSuccessAlert(
+        AlertUtils.showSnackBarSuccess(
           context: context,
           message: 'Töleg üstünlikli girizildi!',
-          lang: lang,
+          second: 3,
         );
       }
     } catch (e) {
@@ -558,43 +583,61 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                       SizedBox(height: 2.h),
                       terminalsAsync.when(
                         data: (terminals) {
-                          return DropdownButtonFormField<Terminal>(
-                            value: selectedTerminal,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
+                          return InkWell(
+                            onTap: () => _showTerminalBottomSheet(context, terminals),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12.w,
+                                vertical: 12.h,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey[400]!),
                                 borderRadius: BorderRadius.circular(8.r),
                               ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12.w,
-                                vertical: 8.h,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: selectedTerminal != null && selectedTerminal!.assetSerNo.isNotEmpty
+                                        ? Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${selectedTerminal!.itemName} (${selectedTerminal!.itemCode})',
+                                                style: TextStyle(
+                                                  fontSize: 14.sp,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontFamily: AppFonts.monserratBold,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              SizedBox(height: 4.h),
+                                              Text(
+                                                'Seriýa: ${selectedTerminal!.assetSerNo}',
+                                                style: TextStyle(
+                                                  fontSize: 12.sp,
+                                                  color: Colors.grey[600],
+                                                  fontFamily: AppFonts.monserratBold,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : Text(
+                                            'Terminal saýlaň',
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              color: Colors.grey[600],
+                                              fontFamily: AppFonts.monserratBold,
+                                            ),
+                                          ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_drop_down,
+                                    color: Colors.grey[600],
+                                  ),
+                                ],
                               ),
                             ),
-                            hint: const Text('Terminal saýlaň'),
-                            items: terminals.map((terminal) {
-                              return DropdownMenuItem(
-                                value: terminal,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${terminal.itemName} ${terminal.itemCode}',
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      '${terminal.assetGroup} ${terminal.assetSerNo}',
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    SizedBox(height: 4.h),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedTerminal = value;
-                              });
-                            },
                           );
                         },
                         loading: () => const CircularProgressIndicator(),
@@ -750,6 +793,111 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showTerminalBottomSheet(BuildContext context, List<Terminal> terminals) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.symmetric(vertical: 16.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Terminal Saýlaň',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(CupertinoIcons.clear_circled, size: 24.sp),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1.h),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: terminals.length,
+                  itemBuilder: (context, index) {
+                    final terminal = terminals[index];
+                    final isSelected = selectedTerminal?.assetSerNo == terminal.assetSerNo;
+                    return ListTile(
+                      selected: isSelected,
+                      selectedTileColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      leading: Container(
+                        width: 40.w,
+                        height: 40.h,
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? Theme.of(context).primaryColor 
+                              : Colors.green[100],
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Icon(
+                          Icons.payment,
+                          color: isSelected ? Colors.white : Colors.green[600],
+                          size: 24.sp,
+                        ),
+                      ),
+                      title: Text(
+                        '${terminal.itemName} (${terminal.itemCode})',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: AppFonts.monserratBold,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${terminal.assetGroup} ${terminal.assetSerNo}',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.grey[700],
+                              fontFamily: AppFonts.monserratBold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check_circle,
+                              color: Theme.of(context).primaryColor,
+                              size: 24.sp,
+                            )
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          selectedTerminal = terminal;
+                        });
+                        // Save to provider for future use
+                        ref.read(selectedTerminalProvider.notifier).update(terminal.assetSerNo);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
