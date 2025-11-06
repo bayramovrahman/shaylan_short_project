@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconly/iconly.dart';
 import 'package:lottie/lottie.dart';
@@ -8,10 +9,12 @@ import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:shaylan_agent/constants/asset_path.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:shaylan_agent/methods/gridview.dart';
+import 'package:shaylan_agent/models/visit_payment.dart';
 import 'package:shaylan_agent/pages/customer_balance_history/customer_balance_history.dart';
 import 'package:shaylan_agent/pages/customers_for_kollektor/last_visit_types/new_invoice_list_page.dart';
+import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
 
-class NewCreditReportsPage extends StatefulWidget {
+class NewCreditReportsPage extends ConsumerStatefulWidget {
   const NewCreditReportsPage({
     super.key,
     required this.visitID,
@@ -22,42 +25,14 @@ class NewCreditReportsPage extends StatefulWidget {
   final String cardCode;
 
   @override
-  State<NewCreditReportsPage> createState() => _NewCreditReportsPageState();
+  ConsumerState<NewCreditReportsPage> createState() =>
+      _NewCreditReportsPageState();
 }
 
-class _NewCreditReportsPageState extends State<NewCreditReportsPage>
+class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
     with SingleTickerProviderStateMixin {
-  // Just empty column
-
   late AnimationController _animationController;
   late Animation<double> _animation;
-
-  List<Invoice> invoices = [
-    Invoice(
-      invoiceNumber: '№7816511',
-      amount: 1250.00,
-      date: DateTime(2025, 11, 1),
-      isPaid: true,
-    ),
-    Invoice(
-      invoiceNumber: '№8724565',
-      amount: 3400.50,
-      date: DateTime(2025, 11, 2),
-      isPaid: true,
-    ),
-    Invoice(
-      invoiceNumber: '№3565455',
-      amount: 890.75,
-      date: DateTime(2025, 11, 3),
-      isPaid: true,
-    ),
-    Invoice(
-      invoiceNumber: '№4365346',
-      amount: 2150.00,
-      date: DateTime(2025, 11, 4),
-      isPaid: true,
-    ),
-  ];
 
   @override
   void initState() {
@@ -85,6 +60,12 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
   @override
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
+    
+    // Watch visit payments for this visit
+    final visitPaymentsAsync = ref.watch(
+      getVisitPaymentsByVisitIDProvider(widget.visitID),
+    );
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -147,220 +128,239 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
-            child: Column(
-              children: [
-                Text(
-                  'Jemi Alynan Töleg',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppFonts.monserratBold,
+      body: visitPaymentsAsync.when(
+        data: (visitPayments) {
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).primaryColor,
+                      Theme.of(context).primaryColor,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                SizedBox(height: 5.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+                child: Column(
                   children: [
-                    SizedBox(
-                      width: 45.w,
-                      height: 45.h,
-                      child: Lottie.asset(
-                        AssetPath.moneyAnimation,
-                        repeat: false,
-                        fit: BoxFit.contain,
-                        animate: true,
-                      ),
-                    ),
                     Text(
-                      '${_calculateTotal().toStringAsFixed(2)} TMT',
+                      'Jemi Alynan Töleg',
                       style: TextStyle(
-                        fontSize: 28.sp,
-                        color: Colors.white,
+                        fontSize: 14.sp,
+                        color: Colors.white70,
                         fontWeight: FontWeight.bold,
                         fontFamily: AppFonts.monserratBold,
                       ),
                     ),
-                  ],
-                ),
-                SizedBox(height: 5.h),
-                Text(
-                  '${invoices.length} ${lang.invoice}',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppFonts.monserratBold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: invoices.isEmpty
-                ? Center(
-                    child: Column(
+                    SizedBox(height: 5.h),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.receipt_long_outlined,
-                          size: 80.sp,
-                          color: Theme.of(context).primaryColor,
+                        SizedBox(
+                          width: 45.w,
+                          height: 45.h,
+                          child: Lottie.asset(
+                            AssetPath.moneyAnimation,
+                            repeat: false,
+                            fit: BoxFit.contain,
+                            animate: true,
+                          ),
                         ),
-                        const SizedBox(height: 16),
                         Text(
-                          'Hiç hili töleg girizilmedi',
+                          '${_calculateTotal(visitPayments).toStringAsFixed(2)} TMT',
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).primaryColor,
+                            fontSize: 28.sp,
+                            color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppFonts.monserratBold,
                           ),
                         ),
                       ],
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: invoices.length,
-                    itemBuilder: (context, index) {
-                      final invoice = invoices[index];
-                      return _buildDismissibleInvoiceCard(invoice, index);
-                    },
-                  ),
-          ),
-
-          // Aşaky düwmeler
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
+                    SizedBox(height: 5.h),
+                    Text(
+                      '${visitPayments.length} ${lang.invoice}',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppFonts.monserratBold,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 10.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        'Wiziti Tamamla',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppFonts.monserratBold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        navigatorPushMethod(
-                          context,
-                          NewInvoiceListPage(
-                            cardCode: widget.cardCode,
-                            visitID: widget.visitID,
-                          ),
-                          false,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 10.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: Text(
-                        'Töleg Giriz',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppFonts.monserratBold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ),
-            ),
+
+              Expanded(
+                child: visitPayments.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_outlined,
+                              size: 80.sp,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            SizedBox(height: 16.h),
+                            Text(
+                              'Hiç hili töleg girizilmedi',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppFonts.monserratBold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: EdgeInsets.all(16.w),
+                        itemCount: visitPayments.length,
+                        itemBuilder: (context, index) {
+                          final payment = visitPayments[index];
+                          return _buildDismissibleInvoiceCard(
+                            payment,
+                            index,
+                            visitPayments,
+                          );
+                        },
+                      ),
+              ),
+
+              // Bottom buttons
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 10.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: Text(
+                            'Wiziti Tamamla',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppFonts.monserratBold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            navigatorPushMethod(
+                              context,
+                              NewInvoiceListPage(
+                                cardCode: widget.cardCode,
+                                visitID: widget.visitID,
+                              ),
+                              false,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 10.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: Text(
+                            'Töleg Giriz',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppFonts.monserratBold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+        error: (error, stackTrace) => Center(
+          child: Text('Error: ${error.toString()}'),
+        ),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            color: Theme.of(context).primaryColor,
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildDismissibleInvoiceCard(Invoice invoice, int index) {
+  Widget _buildDismissibleInvoiceCard(
+    VisitPayment payment,
+    int index,
+    List<VisitPayment> allPayments,
+  ) {
     return Dismissible(
-      key: Key(invoice.invoiceNumber),
+      key: Key(payment.id.toString()),
       direction: DismissDirection.startToEnd,
       background: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: 12.h),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.red[400]!, Colors.red[600]!],
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 24),
-        child: Icon(Icons.delete_outline, color: Colors.white, size: 32),
+        padding: EdgeInsets.only(left: 24.w),
+        child: Icon(Icons.delete_outline, color: Colors.white, size: 32.sp),
       ),
       confirmDismiss: (direction) async {
-        // Onay dialogu göster
         return await showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(16.r),
               ),
-              title: const Text('Faturany pozmak'),
+              title: const Text('Töleg pozmak'),
               content: Text(
-                '${invoice.invoiceNumber} belgili faturany pozmak isleýärsiňizmi?',
+                'Bu tölegi pozmak isleýärsiňizmi?',
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(
                     'Ýok',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 16.sp),
                   ),
                 ),
                 ElevatedButton(
@@ -369,12 +369,12 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
                     backgroundColor: Colors.red[600],
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Hawa, Poz',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16.sp),
                   ),
                 ),
               ],
@@ -382,37 +382,27 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
           },
         );
       },
-      onDismissed: (direction) {
-        setState(() {
-          invoices.removeAt(index);
-        });
-
+      onDismissed: (direction) async {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${invoice.invoiceNumber} pozuldy'),
+            content: const Text('Töleg pozuldy'),
             duration: const Duration(seconds: 2),
             backgroundColor: Colors.red[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            action: SnackBarAction(
-              label: 'Yzyna al',
-              textColor: Colors.white,
-              onPressed: () {
-                setState(() {
-                  invoices.insert(index, invoice);
-                });
-              },
+              borderRadius: BorderRadius.circular(10.r),
             ),
           ),
         );
+        
+        // Refresh the list
+        ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: 12.h),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -425,12 +415,12 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
           color: Colors.transparent,
           child: InkWell(
             onTap: () {},
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.w),
               child: Row(
                 children: [
-                  // Nyşan
+                  // Icon
                   Container(
                     width: 42.w,
                     height: 42.h,
@@ -451,13 +441,13 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
                   ),
                   SizedBox(width: 8.w),
 
-                  // Maglumatlar
+                  // Payment details
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          invoice.invoiceNumber,
+                          'Töleg №${payment.id}',
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
@@ -475,7 +465,7 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
                             ),
                             SizedBox(width: 2.w),
                             Text(
-                              _formatDate(invoice.date),
+                              _formatDate(DateTime.now()),
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 color: Colors.grey[800],
@@ -489,12 +479,12 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
                     ),
                   ),
 
-                  // Möçber we ýagdaý
+                  // Amount and status
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${invoice.amount.toStringAsFixed(2)} TMT',
+                        '${payment.paySum.toStringAsFixed(2)} TMT',
                         style: TextStyle(
                           fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
@@ -504,16 +494,16 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
                       ),
                       SizedBox(height: 5.h),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 4.h,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Text(
-                          'Pereçesleniýa',
+                          _getPaymentTypeText(payment.paymentType),
                           style: TextStyle(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
@@ -533,26 +523,24 @@ class _NewCreditReportsPageState extends State<NewCreditReportsPage>
     );
   }
 
-  double _calculateTotal() {
-    return invoices.fold(0, (sum, invoice) => sum + invoice.amount);
+  double _calculateTotal(List<VisitPayment> payments) {
+    return payments.fold(0, (sum, payment) => sum + payment.paySum);
   }
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
   }
-}
 
-// Invoice model synpy
-class Invoice {
-  final String invoiceNumber;
-  final double amount;
-  final DateTime date;
-  final bool isPaid;
-
-  Invoice({
-    required this.invoiceNumber,
-    required this.amount,
-    required this.date,
-    required this.isPaid,
-  });
+  String _getPaymentTypeText(String paymentType) {
+    switch (paymentType) {
+      case 'nagt':
+        return 'Nagt';
+      case 'terminal':
+        return 'Terminal';
+      case 'pereçesleniya':
+        return 'Pereçesleniýa';
+      default:
+        return paymentType;
+    }
+  }
 }

@@ -350,15 +350,13 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: Theme.of(
-                                            context,
+                                            context
                                           ).primaryColor.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            8.r,
-                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(8.r),
                                           border: Border.all(
-                                            color: Theme.of(
-                                              context,
-                                            ).primaryColor,
+                                            color:
+                                                Theme.of(context).primaryColor,
                                             width: 2,
                                             style: BorderStyle.solid,
                                           ),
