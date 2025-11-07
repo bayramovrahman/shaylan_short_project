@@ -38,31 +38,6 @@ class NewInvoiceCard extends ConsumerStatefulWidget {
 
 class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
   // Just empty column
-
-  late Terminal selectedTerminal;
-
-  @override
-  void initState() {
-    super.initState();
-    // Terminal seçimini yükle
-    _loadSavedTerminal();
-  }
-
-  Future<void> _loadSavedTerminal() async {
-    final savedTerminalSerNo = ref.read(selectedTerminalProvider);
-    if (savedTerminalSerNo.isNotEmpty) {
-      final terminalsAsync = await ref.read(getTerminalsProvider.future);
-      final savedTerminal = terminalsAsync.firstWhere(
-        (t) => t.assetSerNo == savedTerminalSerNo,
-        orElse: () => Terminal.defaultTerminal(),
-      );
-      if (savedTerminal.assetSerNo.isNotEmpty && mounted) {
-        setState(() {
-          selectedTerminal = savedTerminal;
-        });
-      }
-    }
-  }
   
   void _showPaymentDialog(BuildContext context) {
     showDialog(
@@ -352,7 +327,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   final TextEditingController amountController = TextEditingController();
   final TextEditingController commentController = TextEditingController();
   final TextEditingController checkNumberController = TextEditingController();
-  
+
   String? selectedPaymentType;
   Terminal? selectedTerminal;
   bool isProcessing = false;
@@ -361,21 +336,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final savedTerminalSerNo = ref.read(selectedTerminalProvider);
-      if (savedTerminalSerNo.isNotEmpty) {
-        final terminalsAsync = ref.read(getTerminalsProvider);
-        terminalsAsync.whenData((terminals) {
-          final savedTerminal = terminals.firstWhere(
-            (t) => t.assetSerNo == savedTerminalSerNo,
-            orElse: () => Terminal.defaultTerminal(),
-          );
-          if (savedTerminal.assetSerNo.isNotEmpty) {
-            setState(() {
-              selectedTerminal = savedTerminal;
-            });
-          }
-        });
-      }
+      _selectTerminalFromPreferences();
     });
   }
 
@@ -589,8 +550,13 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                       onChanged: (value) {
                         setState(() {
                           selectedPaymentType = value;
-                          selectedTerminal = null;
+                          if (value != VisitPaymentType.terminal) {
+                            selectedTerminal = null;
+                          }
                         });
+                        if (value == VisitPaymentType.terminal) {
+                          _selectTerminalFromPreferences();
+                        }
                       },
                     ),
                     SizedBox(height: 12.h),
@@ -924,5 +890,28 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         );
       },
     );
+  }
+
+  Future<void> _selectTerminalFromPreferences() async {
+    final savedTerminalSerNo = ref.read(selectedTerminalProvider);
+    if (savedTerminalSerNo.isEmpty) {
+      return;
+    }
+
+    try {
+      final terminals = await ref.read(getTerminalsProvider.future);
+      final savedTerminal = terminals.firstWhere(
+        (t) => t.assetSerNo == savedTerminalSerNo,
+        orElse: () => Terminal.defaultTerminal(),
+      );
+
+      if (savedTerminal.assetSerNo.isNotEmpty && mounted) {
+        setState(() {
+          selectedTerminal = savedTerminal;
+        });
+      }
+    } catch (_) {
+      // Ignore errors when terminals are not yet available
+    }
   }
 }

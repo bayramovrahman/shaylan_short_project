@@ -28,10 +28,12 @@ class NewCreditReportsPage extends ConsumerStatefulWidget {
   final String cardCode;
 
   @override
-  ConsumerState<NewCreditReportsPage> createState() => _NewCreditReportsPageState();
+  ConsumerState<NewCreditReportsPage> createState() =>
+      _NewCreditReportsPageState();
 }
 
-class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> with SingleTickerProviderStateMixin {
+class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
+    with SingleTickerProviderStateMixin {
   // Just empty column
 
   late AnimationController _animationController;
@@ -88,7 +90,8 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
       await removeVisitPaymentById(payment.id!);
 
       ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
-      ref.invalidate(getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
+      ref.invalidate(
+          getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
 
       await Future.delayed(Duration.zero);
       if (mounted) {
@@ -112,7 +115,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
   @override
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
-    
+
     final visitPaymentsAsync = ref.watch(
       getVisitPaymentsByVisitIDProvider(widget.visitID),
     );
@@ -207,7 +210,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
                         fontFamily: AppFonts.monserratBold,
                       ),
                     ),
-                    SizedBox(height: 5.h),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -233,7 +235,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
                         ),
                       ],
                     ),
-                    SizedBox(height: 5.h),
                     Text(
                       '${visitPayments.length} ${lang.invoice}',
                       style: TextStyle(
@@ -246,7 +247,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
                   ],
                 ),
               ),
-
               Expanded(
                 child: visitPayments.isEmpty
                     ? Center(
@@ -284,7 +284,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
                         },
                       ),
               ),
-
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
                 decoration: BoxDecoration(
@@ -418,7 +417,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
             onTap: () {},
             borderRadius: BorderRadius.circular(16.r),
             child: Padding(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
               child: Row(
                 children: [
                   Container(

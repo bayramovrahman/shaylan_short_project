@@ -28,21 +28,96 @@ class TerminalsPage extends ConsumerWidget {
       ),
       body: terminals.when(
         data: (response) {
-          return ListView.builder(
-            itemCount: response.length,
-            itemBuilder: (context, index) {
-              Terminal terminal = response[index];
-              return ListTile(
-                title: Text('${terminal.itemName} ${terminal.itemCode}'),
-                subtitle: Text('${terminal.assetGroup} ${terminal.assetSerNo}'),
-                trailing: selectedTerminal == terminal.assetSerNo
-                    ? const Icon(Icons.check, color: Colors.blue)
-                    : null,
-                onTap: () => ref
-                    .read(selectedTerminalProvider.notifier)
-                    .update(terminal.assetSerNo),
-              );
-            },
+          Terminal? currentTerminal;
+          if (selectedTerminal.isNotEmpty) {
+            final matches = response
+                .where((terminal) => terminal.assetSerNo == selectedTerminal)
+                .toList();
+            if (matches.isNotEmpty) {
+              currentTerminal = matches.first;
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (currentTerminal != null) ...[
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100),
+                      color: Colors.blue.shade50,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Saýlanan terminal',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${currentTerminal.itemName} (${currentTerminal.itemCode})',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${currentTerminal.assetGroup} • ${currentTerminal.assetSerNo}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Terminaly üýtgetmek üçin aşakdaky sanawdan täzeden saýlaň.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: const Text(
+                    'Terminal saýlanmady',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+              Expanded(
+                child: ListView.builder(
+                  itemCount: response.length,
+                  itemBuilder: (context, index) {
+                    Terminal terminal = response[index];
+                    return RadioListTile<String>(
+                      value: terminal.assetSerNo,
+                      groupValue:
+                          selectedTerminal.isEmpty ? null : selectedTerminal,
+                      title: Text('${terminal.itemName} ${terminal.itemCode}'),
+                      subtitle:
+                          Text('${terminal.assetGroup} ${terminal.assetSerNo}'),
+                      activeColor: Theme.of(context).primaryColor,
+                      onChanged: (value) => ref
+                          .read(selectedTerminalProvider.notifier)
+                          .update(value ?? ''),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
         error: (error, stackTrace) => errorMethod(error),
