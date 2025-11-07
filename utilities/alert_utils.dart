@@ -30,8 +30,9 @@ class AlertUtils {
             child: Text(
               message,
               style: const TextStyle(
-                fontFamily: AppFonts.secondaryFont,
                 color: Colors.white,
+                fontFamily: AppFonts.monserratBold,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -62,8 +63,9 @@ class AlertUtils {
             child: Text(
               message,
               style: const TextStyle(
-                fontFamily: AppFonts.secondaryFont,
+                fontFamily: AppFonts.monserratBold,
                 color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -94,8 +96,9 @@ class AlertUtils {
             child: Text(
               message,
               style: const TextStyle(
-                fontFamily: AppFonts.secondaryFont,
+                fontFamily: AppFonts.monserratBold,
                 color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -828,6 +831,81 @@ class AlertUtils {
         ],
       ),
     );
+  }
+
+  static Future<bool> showDeletePaymentConfirmation({
+    required BuildContext context,
+    required String message,
+    required AppLocalizations lang,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Lottie.asset(
+                AssetPath.warningAlert,
+                width: 100,
+                height: 100,
+                fit: BoxFit.contain,
+                repeat: false,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 16.0.sp,
+                  fontFamily: AppFonts.monserratBold,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                lang.no,
+                style: const TextStyle(
+                  fontSize: 14.0,
+                  fontFamily: AppFonts.secondaryFont,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                lang.yes,
+                style: const TextStyle(
+                  fontSize: 14.0,
+                  fontFamily: AppFonts.secondaryFont,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
   }
 
   // Just empty column

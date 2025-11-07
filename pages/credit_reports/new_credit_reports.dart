@@ -15,6 +15,7 @@ import 'package:shaylan_agent/models/visit_payment.dart';
 import 'package:shaylan_agent/pages/customer_balance_history/customer_balance_history.dart';
 import 'package:shaylan_agent/pages/customers_for_kollektor/last_visit_types/new_invoice_list_page.dart';
 import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
+import 'package:shaylan_agent/utilities/alert_utils.dart';
 
 class NewCreditReportsPage extends ConsumerStatefulWidget {
   const NewCreditReportsPage({
@@ -27,12 +28,12 @@ class NewCreditReportsPage extends ConsumerStatefulWidget {
   final String cardCode;
 
   @override
-  ConsumerState<NewCreditReportsPage> createState() =>
-      _NewCreditReportsPageState();
+  ConsumerState<NewCreditReportsPage> createState() => _NewCreditReportsPageState();
 }
 
-class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
-    with SingleTickerProviderStateMixin {
+class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> with SingleTickerProviderStateMixin {
+  // Just empty column
+
   late AnimationController _animationController;
   late Animation<double> _animation;
 
@@ -73,41 +74,12 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
   }
 
   Future<bool> _confirmDeletePayment(BuildContext context) async {
-    return await showDialog<bool>(
+    var lang = AppLocalizations.of(context)!;
+    return await AlertUtils.showDeletePaymentConfirmation(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
-          ),
-          title: const Text('Töleg pozmak'),
-          content: const Text('Bu tölegi pozmak isleýärsiňizmi?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                'Ýok',
-                style: TextStyle(color: Colors.grey[600], fontSize: 16.sp),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-              ),
-              child: Text(
-                'Hawa, Poz',
-                style: TextStyle(fontSize: 16.sp),
-              ),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+      message: 'Bu tölegi pozmak isleýärsiňizmi?',
+      lang: lang,
+    );
   }
 
   Future<void> _deletePayment(VisitPayment payment) async {
@@ -120,26 +92,18 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
 
       await Future.delayed(Duration.zero);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Töleg pozuldy'),
-            duration: const Duration(seconds: 2),
-            backgroundColor: Colors.red[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-          ),
+        AlertUtils.showSnackBarError(
+          context: context,
+          message: 'Töleg pozuldy',
+          second: 3,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ýalňyşlyk: $e'),
-            backgroundColor: Colors.red[600],
-            behavior: SnackBarBehavior.floating,
-          ),
+        AlertUtils.showSnackBarError(
+          context: context,
+          message: 'Ýalňyşlyk: $e',
+          second: 3,
         );
       }
     }
@@ -433,7 +397,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
         return await _confirmDeletePayment(context);
       },
       onDismissed: (direction) async {
-        // Delete immediately - providers will handle the rebuild
         await _deletePayment(payment);
       },
       child: Container(

@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:iconly/iconly.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:shaylan_agent/models/user.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:shaylan_agent/models/terminal.dart';
@@ -8,11 +8,11 @@ import 'package:shaylan_agent/methods/snackbars.dart';
 import 'package:shaylan_agent/models/static_data.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shaylan_agent/models/visit_payment.dart';
-import 'package:shaylan_agent/providers/local_storadge.dart';
 import 'package:shaylan_agent/utilities/alert_utils.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:shaylan_agent/database/functions/user.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shaylan_agent/providers/local_storadge.dart';
 import 'package:shaylan_agent/models/credit_report_line.dart';
 import 'package:shaylan_agent/providers/database/terminal.dart';
 import 'package:shaylan_agent/models/visit_payment_invoice.dart';
@@ -38,6 +38,31 @@ class NewInvoiceCard extends ConsumerStatefulWidget {
 
 class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
   // Just empty column
+
+  late Terminal selectedTerminal;
+
+  @override
+  void initState() {
+    super.initState();
+    // Terminal seçimini yükle
+    _loadSavedTerminal();
+  }
+
+  Future<void> _loadSavedTerminal() async {
+    final savedTerminalSerNo = ref.read(selectedTerminalProvider);
+    if (savedTerminalSerNo.isNotEmpty) {
+      final terminalsAsync = await ref.read(getTerminalsProvider.future);
+      final savedTerminal = terminalsAsync.firstWhere(
+        (t) => t.assetSerNo == savedTerminalSerNo,
+        orElse: () => Terminal.defaultTerminal(),
+      );
+      if (savedTerminal.assetSerNo.isNotEmpty && mounted) {
+        setState(() {
+          selectedTerminal = savedTerminal;
+        });
+      }
+    }
+  }
   
   void _showPaymentDialog(BuildContext context) {
     showDialog(
