@@ -9,6 +9,7 @@ import 'package:shaylan_agent/models/visit_step.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shaylan_agent/models/inventor_image.dart';
 import 'package:shaylan_agent/functions/file_upload.dart';
+import 'package:shaylan_agent/utilities/alert_utils.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shaylan_agent/database/functions/user.dart';
@@ -33,111 +34,11 @@ class InventorNewPage extends ConsumerStatefulWidget {
 }
 
 class _InventorNewPageState extends ConsumerState<InventorNewPage> {
+  // Just empty column
+
   bool hasInventor = false;
   bool hasContract = true;
   bool isProcessing = false;
-
-  Future<void> _takePhoto() async {
-    User user = await getUser();
-    String currentTime = DateFormat('dd-MM-yyyy_kkmmss').format(DateTime.now());
-    String fileName =
-        '${user.empId}-${widget.cardCode}-${widget.visitID}-$currentTime';
-
-    await getImageFromCamera(ref, 3, 4, widget.visitID, fileName);
-
-    ref.invalidate(getInventorImagesByVisitIDProvider(widget.visitID));
-  }
-
-  Future<void> _deletePhoto(InventorImage image) async {
-    await deleteFile(image.imagePath!);
-    await removeInventorImageById(image.id!);
-    ref.invalidate(getInventorImagesByVisitIDProvider(widget.visitID));
-  }
-
-  Future<void> _completeInventorStepsAndProceed() async {
-    if (isProcessing) return;
-
-    setState(() {
-      isProcessing = true;
-    });
-
-    try {
-      var lang = AppLocalizations.of(context)!;
-      String currentTime = DateTime.now().toIso8601String();
-
-      // Update visit with inventor information
-      if (hasInventor) {
-        await updateVisitHasInventor(1);
-        await updateVisitHasInventorContract(hasContract ? 1 : 0);
-      } else {
-        await updateVisitHasInventor(0);
-      }
-
-      // Create Step 1: Reconciliation of Mutual Settlements
-      VisitStepModel step1 = VisitStepModel(
-        startTime: currentTime,
-        name: 'step 1',
-        visitID: widget.visitID,
-        description: lang.reconciliationOfMutualSettlements,
-      );
-      await createVisitStep(step1);
-
-      // Immediately end Step 1
-      await setEndTimeToVisitStep(widget.visitID, 'step 1', currentTime);
-
-      // Create Step 2: Work on Special Tasks
-      VisitStepModel step2 = VisitStepModel(
-        startTime: currentTime,
-        name: 'step 2',
-        visitID: widget.visitID,
-        description: lang.workOnSpecialTasks,
-      );
-      await createVisitStep(step2);
-
-      // Set can pay to 'Y' for step 2
-      await setCanPayToVisitStep(widget.visitID, 'step 2', 'Y');
-
-      // End Step 2
-      await setEndTimeToVisitStep(widget.visitID, 'step 2', currentTime);
-
-      // Create Step 3: Collection of Payment
-      VisitStepModel step3 = VisitStepModel(
-        startTime: currentTime,
-        name: 'step 3',
-        visitID: widget.visitID,
-        description: lang.collectionOfPayment,
-      );
-      await createVisitStep(step3);
-
-      // Navigate to NewCreditReportsPage
-      if (context.mounted) {
-        navigatorPushMethod(
-          context,
-          NewCreditReportsPage(
-            visitID: widget.visitID,
-            cardCode: widget.cardCode,
-          ),
-          false,
-        );
-      }
-    } catch (e) {
-      debugPrint('Error completing inventor steps: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isProcessing = false;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -249,9 +150,7 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
                     color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12.r),
                     border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).primaryColor.withValues(alpha: 0.3),
+                      color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
                       width: 2,
                     ),
                   ),
@@ -322,7 +221,7 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
                     children: [
                       Center(
                         child: Text(
-                          'Inwentor suratlary',
+                          lang.inventoryPhotos,
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
@@ -349,21 +248,16 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
                                       borderRadius: BorderRadius.circular(8.r),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context
-                                          ).primaryColor.withValues(alpha: 0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8.r),
+                                          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(8.r),
                                           border: Border.all(
-                                            color:
-                                                Theme.of(context).primaryColor,
+                                            color: Theme.of(context).primaryColor,
                                             width: 2,
                                             style: BorderStyle.solid,
                                           ),
                                         ),
                                         child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
                                             Icon(
                                               Icons.add_a_photo,
@@ -385,9 +279,7 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
                                   child: Stack(
                                     children: [
                                       ClipRRect(
-                                        borderRadius: BorderRadius.circular(
-                                          8.r,
-                                        ),
+                                        borderRadius: BorderRadius.circular(8.r),
                                         child: Image.file(
                                           File(image.imagePath!),
                                           fit: BoxFit.cover,
@@ -407,8 +299,7 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
                                               shape: BoxShape.circle,
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black
-                                                      .withValues(alpha: 0.3),
+                                                  color: Colors.black.withValues(alpha: 0.3),
                                                   blurRadius: 4,
                                                   offset: const Offset(0, 2),
                                                 ),
@@ -498,4 +389,102 @@ class _InventorNewPageState extends ConsumerState<InventorNewPage> {
       ),
     );
   }
+
+  Future<void> _takePhoto() async {
+    User user = await getUser();
+    String currentTime = DateFormat('dd-MM-yyyy_kkmmss').format(DateTime.now());
+    String fileName = '${user.empId}-${widget.cardCode}-${widget.visitID}-$currentTime';
+
+    await getImageFromCamera(ref, 3, 4, widget.visitID, fileName);
+    ref.invalidate(getInventorImagesByVisitIDProvider(widget.visitID));
+  }
+
+  Future<void> _deletePhoto(InventorImage image) async {
+    await deleteFile(image.imagePath!);
+    await removeInventorImageById(image.id!);
+    ref.invalidate(getInventorImagesByVisitIDProvider(widget.visitID));
+  }
+
+  Future<void> _completeInventorStepsAndProceed() async {
+    if (isProcessing) return;
+
+    setState(() {
+      isProcessing = true;
+    });
+
+    try {
+      var lang = AppLocalizations.of(context)!;
+      String currentTime = DateTime.now().toIso8601String();
+
+      // Update visit with inventor information
+      if (hasInventor) {
+        await updateVisitHasInventor(1);
+        await updateVisitHasInventorContract(hasContract ? 1 : 0);
+      } else {
+        await updateVisitHasInventor(0);
+      }
+
+      // Create Step 1: Reconciliation of Mutual Settlements
+      VisitStepModel step1 = VisitStepModel(
+        startTime: currentTime,
+        name: 'step 1',
+        visitID: widget.visitID,
+        description: lang.reconciliationOfMutualSettlements,
+      );
+
+      await createVisitStep(step1);
+      await setEndTimeToVisitStep(widget.visitID, 'step 1', currentTime);
+
+      VisitStepModel step2 = VisitStepModel(
+        startTime: currentTime,
+        name: 'step 2',
+        visitID: widget.visitID,
+        description: lang.workOnSpecialTasks,
+      );
+
+      await createVisitStep(step2);
+      await setCanPayToVisitStep(widget.visitID, 'step 2', 'Y');
+      await setEndTimeToVisitStep(widget.visitID, 'step 2', currentTime);
+
+      // Create Step 3: Collection of Payment
+      VisitStepModel step3 = VisitStepModel(
+        startTime: currentTime,
+        name: 'step 3',
+        visitID: widget.visitID,
+        description: lang.collectionOfPayment,
+      );
+      await createVisitStep(step3);
+
+      // Navigate to NewCreditReportsPage
+      if (context.mounted) {
+        if (mounted) {
+          navigatorPushMethod(
+            context,
+            NewCreditReportsPage(
+              visitID: widget.visitID,
+              cardCode: widget.cardCode,
+            ),
+            false,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error completing inventor steps: $e');
+      if (mounted) {
+        AlertUtils.showSnackBarError(
+          context: context,
+          message: AppLocalizations.of(context)!.unsuccessfully,
+          second: 3,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isProcessing = false;
+        });
+      }
+    }
+  }
+
+  // Just empty column
 }

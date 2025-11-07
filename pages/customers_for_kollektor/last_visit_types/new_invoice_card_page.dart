@@ -129,10 +129,10 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Faktura Nomeri",
+                                lang.invoice,
                                 style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12.sp,
+                                  color: Colors.white,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,
                                   fontFamily: AppFonts.monserratBold,
                                 ),
@@ -141,7 +141,7 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
                                 '№${widget.creditReportLine.docNum}',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 16.sp,
+                                  fontSize: 14.sp,
                                   fontWeight: FontWeight.bold,
                                   fontFamily: AppFonts.monserratBold,
                                 ),
@@ -154,7 +154,7 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
                     SizedBox(height: 10.h),
                     _buildInfoRow(
                       icon: Icons.mode_standby_sharp,
-                      label: lang.loanAmount,
+                      label: lang.amount,
                       value: '${widget.creditReportLine.creditSum} TMT',
                     ),
                     SizedBox(height: 10.h),
@@ -167,11 +167,16 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
                     _buildInfoRow(
                       icon: Icons.access_time,
                       label: lang.expiredDay,
-                      value: '${widget.creditReportLine.expired} gün',
+                      value: '${widget.creditReportLine.expired} ${lang.day}',
                     ),
                     SizedBox(height: 10.h),
-                    
-                    // Show paid amount if exists
+                    _buildInfoRow(
+                      icon: IconlyBold.wallet,
+                      label: lang.remainder,
+                      value: '${remainingBalance.toStringAsFixed(2)} TMT',
+                      isHighlighted: true,
+                    ),
+                    SizedBox(height: 10.h),
                     if (totalPaid > 0) ...[
                       _buildInfoRow(
                         icon: Icons.check_circle,
@@ -180,16 +185,8 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
                         isHighlighted: true,
                         highlightColor: Colors.green[300],
                       ),
-                      SizedBox(height: 10.h),
                     ],
-                    
-                    _buildInfoRow(
-                      icon: IconlyBold.wallet,
-                      label: lang.remainder,
-                      value: '${remainingBalance.toStringAsFixed(2)} TMT',
-                      isHighlighted: true,
-                    ),
-                    SizedBox(height: 16.h),
+                    SizedBox(height: 10.h),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -272,9 +269,7 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
       children: [
         Icon(
           icon,
-          color: isHighlighted 
-              ? (highlightColor ?? Colors.yellow[500]) 
-              : Colors.white70,
+          color: Colors.white,
           size: 18.sp,
         ),
         SizedBox(width: 8.w),
@@ -282,8 +277,8 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
           child: Text(
             label,
             style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.white70,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
               fontSize: 13.sp,
               fontFamily: AppFonts.monserratBold,
             ),
@@ -293,9 +288,7 @@ class _NewInvoiceCardState extends ConsumerState<NewInvoiceCard> {
         Text(
           value,
           style: TextStyle(
-            color: isHighlighted 
-                ? (highlightColor ?? Colors.yellow[400]) 
-                : Colors.white,
+            color: Colors.white,
             fontSize: isHighlighted ? 15.sp : 14.sp,
             fontWeight: isHighlighted ? FontWeight.bold : FontWeight.w600,
             fontFamily: AppFonts.monserratBold,
@@ -450,7 +443,6 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
     final terminalsAsync = ref.watch(getTerminalsProvider);
-
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
@@ -463,7 +455,6 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: EdgeInsets.all(16.w),
               decoration: BoxDecoration(
@@ -493,8 +484,6 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                 ],
               ),
             ),
-
-            // Content
             Flexible(
               child: SingleChildScrollView(
                 padding: EdgeInsets.all(16.w),
@@ -560,8 +549,6 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                       },
                     ),
                     SizedBox(height: 12.h),
-
-                    // Terminal Selection
                     if (selectedPaymentType == VisitPaymentType.terminal) ...[
                       Text(
                         'Terminal',
@@ -684,7 +671,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                           horizontal: 12.w,
                           vertical: 8.h,
                         ),
-                        hintText: 'Möçberi giriziň',
+                        hintText: lang.enterPayment,
                         suffixText: 'TMT',
                       ),
                     ),
@@ -711,7 +698,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                           horizontal: 12.w,
                           vertical: 8.h,
                         ),
-                        hintText: 'Teswir giriziň',
+                        hintText: lang.enterComment,
                       ),
                     ),
                   ],
@@ -733,28 +720,9 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   ElevatedButton(
-                    onPressed: isProcessing ? null : () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                    child: Text(
-                      lang.cancel,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppFonts.monserratBold,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  ElevatedButton(
                     onPressed: isProcessing ? null : () => _processPayment(context, lang),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Theme.of(context).primaryColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.r),
                       ),
@@ -834,14 +802,12 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                         width: 40.w,
                         height: 40.h,
                         decoration: BoxDecoration(
-                          color: isSelected 
-                              ? Theme.of(context).primaryColor 
-                              : Colors.green[100],
+                          color: isSelected ? Theme.of(context).primaryColor : Colors.blue[100],
                           borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Icon(
                           Icons.payment,
-                          color: isSelected ? Colors.white : Colors.green[600],
+                          color: isSelected ? Colors.white : Colors.blue[600],
                           size: 24.sp,
                         ),
                       ),

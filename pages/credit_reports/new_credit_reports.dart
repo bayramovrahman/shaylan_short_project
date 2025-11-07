@@ -1,21 +1,25 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconly/iconly.dart';
 import 'package:lottie/lottie.dart';
-import 'package:shaylan_agent/app/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
-import 'package:shaylan_agent/constants/asset_path.dart';
-import 'package:shaylan_agent/database/functions/visit_payment.dart';
-import 'package:shaylan_agent/database/functions/visit_payment_invoice.dart';
-import 'package:shaylan_agent/l10n/app_localizations.dart';
+import 'package:shaylan_agent/app/app_colors.dart';
 import 'package:shaylan_agent/methods/gridview.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shaylan_agent/constants/asset_path.dart';
 import 'package:shaylan_agent/models/visit_payment.dart';
+import 'package:shaylan_agent/utilities/alert_utils.dart';
+import 'package:shaylan_agent/l10n/app_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shaylan_agent/database/functions/visit.dart';
+import 'package:shaylan_agent/database/functions/visit_step.dart';
+import 'package:shaylan_agent/database/functions/visit_payment.dart';
+import 'package:shaylan_agent/pages/waiting_visits/waiting_visits.dart';
+import 'package:shaylan_agent/database/functions/visit_payment_invoice.dart';
+import 'package:shaylan_agent/pages/send/sendqueuewidgets/tradingqueue.dart';
+import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
 import 'package:shaylan_agent/pages/customer_balance_history/customer_balance_history.dart';
 import 'package:shaylan_agent/pages/customers_for_kollektor/last_visit_types/new_invoice_list_page.dart';
-import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
-import 'package:shaylan_agent/utilities/alert_utils.dart';
 
 class NewCreditReportsPage extends ConsumerStatefulWidget {
   const NewCreditReportsPage({
@@ -28,16 +32,15 @@ class NewCreditReportsPage extends ConsumerStatefulWidget {
   final String cardCode;
 
   @override
-  ConsumerState<NewCreditReportsPage> createState() =>
-      _NewCreditReportsPageState();
+  ConsumerState<NewCreditReportsPage> createState() => _NewCreditReportsPageState();
 }
 
-class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
-    with SingleTickerProviderStateMixin {
+class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> with SingleTickerProviderStateMixin {
   // Just empty column
 
   late AnimationController _animationController;
   late Animation<double> _animation;
+  bool _isCompletingVisit = false;
 
   @override
   void initState() {
@@ -50,10 +53,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
     _animation = Tween<double>(begin: -0.1, end: 0.1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-
-    debugPrint(
-      'NewCreditReportsPage - visitID: ${widget.visitID}, cardCode: ${widget.cardCode}',
-    );
   }
 
   @override
@@ -61,57 +60,6 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
     _animationController.dispose();
     super.dispose();
   }
-
-  String _getPaymentTypeText(String paymentType) {
-    switch (paymentType.toLowerCase()) {
-      case 'cash':
-        return 'Nagt';
-      case 'credit_cards':
-        return 'Terminal';
-      case 'bank':
-        return 'Pereçesleniýa';
-      default:
-        return paymentType;
-    }
-  }
-
-  Future<bool> _confirmDeletePayment(BuildContext context) async {
-    var lang = AppLocalizations.of(context)!;
-    return await AlertUtils.showDeletePaymentConfirmation(
-      context: context,
-      message: 'Bu tölegi pozmak isleýärsiňizmi?',
-      lang: lang,
-    );
-  }
-
-  Future<void> _deletePayment(VisitPayment payment) async {
-    try {
-      await removeVisitPaymentInvoicesByInvPayId(payment.id!);
-      await removeVisitPaymentById(payment.id!);
-
-      ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
-      ref.invalidate(
-          getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
-
-      await Future.delayed(Duration.zero);
-      if (mounted) {
-        AlertUtils.showSnackBarError(
-          context: context,
-          message: 'Töleg pozuldy',
-          second: 3,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        AlertUtils.showSnackBarError(
-          context: context,
-          message: 'Ýalňyşlyk: $e',
-          second: 3,
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
@@ -202,9 +150,9 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                 child: Column(
                   children: [
                     Text(
-                      'Jemi Alynan Töleg',
+                      lang.totalReceived,
                       style: TextStyle(
-                        fontSize: 14.sp,
+                        fontSize: 16.sp,
                         color: Colors.white70,
                         fontWeight: FontWeight.bold,
                         fontFamily: AppFonts.monserratBold,
@@ -236,7 +184,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                       ],
                     ),
                     Text(
-                      '${visitPayments.length} ${lang.invoice}',
+                      '${lang.orderSum} ${visitPayments.length} ${lang.invoice}',
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: Colors.white70,
@@ -260,7 +208,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                             ),
                             SizedBox(height: 16.h),
                             Text(
-                              'Hiç hili töleg girizilmedi',
+                              lang.noPaymentMade,
                               style: TextStyle(
                                 fontSize: 16.sp,
                                 color: Theme.of(context).primaryColor,
@@ -301,7 +249,18 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: _isCompletingVisit
+                            ? null
+                            : () {
+                                AlertUtils.showScreenAlertDialog(
+                                  context: context,
+                                  message: '${lang.endVisit}?',
+                                  lang: lang,
+                                  onConfirm: () {
+                                    _completeVisit();
+                                  },
+                                );
+                              },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).primaryColor,
                             foregroundColor: Colors.white,
@@ -311,14 +270,24 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                             ),
                             elevation: 2,
                           ),
-                          child: Text(
-                            'Wiziti Tamamla',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppFonts.monserratBold,
-                            ),
-                          ),
+                          child: _isCompletingVisit
+                            ? SizedBox(
+                                height: 20.sp,
+                                width: 20.sp,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation(Colors.white),
+                                ),
+                              )
+                            : Text(
+                                lang.endVisit,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppFonts.monserratBold,
+                                ),
+                              ),
                         ),
                       ),
                       SizedBox(width: 8.w),
@@ -344,7 +313,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
                             elevation: 2,
                           ),
                           child: Text(
-                            'Töleg Giriz',
+                            lang.enterPayment,
                             style: TextStyle(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
@@ -516,6 +485,109 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage>
         ),
       ),
     );
+  }
+
+  Future<void> _completeVisit() async {
+    if (_isCompletingVisit) {
+      return;
+    }
+
+    setState(() {
+      _isCompletingVisit = true;
+    });
+
+    try {
+      final currentTime = DateTime.now().toIso8601String();
+      final bool hasStepFive = await getVisitStepIfExist('step 5', widget.visitID) != 0;
+      final bool hasTraderVisit = await getVisitStepIfExist('traderVisitended', widget.visitID) != 0;
+
+      if (hasStepFive) {
+        await setEndTimeToVisitStep(widget.visitID, 'step 5', currentTime);
+      } else if (hasTraderVisit) {
+        await setEndTimeToVisitStep(
+          widget.visitID,
+          'traderVisitended',
+          currentTime,
+        );
+      } else {
+        await setEndTimeToVisitStep(widget.visitID, 'step 2', currentTime);
+      }
+
+      await setEndTimeToVisit(widget.visitID);
+
+      if (!mounted) {
+        return;
+      }
+
+      navigatorPushMethod(
+        context,
+        hasTraderVisit ? SendQueueProgress() : const WaitingVisitsPage(),
+        false,
+      );
+    } catch (error) {
+      if (mounted) {
+        AlertUtils.showSnackBarError(
+          context: context,
+          message: AppLocalizations.of(context)!.unsuccessfully,
+          second: 3,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCompletingVisit = false;
+        });
+      }
+    }
+  }
+
+  String _getPaymentTypeText(String paymentType) {
+    switch (paymentType.toLowerCase()) {
+      case 'cash':
+        return 'Nagt';
+      case 'credit_cards':
+        return 'Terminal';
+      case 'bank':
+        return 'Pereçesleniýa';
+      default:
+        return paymentType;
+    }
+  }
+
+  Future<bool> _confirmDeletePayment(BuildContext context) async {
+    var lang = AppLocalizations.of(context)!;
+    return await AlertUtils.showDeletePaymentConfirmation(
+      context: context,
+      message: lang.paymentCancelConfirmation,
+      lang: lang,
+    );
+  }
+
+  Future<void> _deletePayment(VisitPayment payment) async {
+    try {
+      await removeVisitPaymentInvoicesByInvPayId(payment.id!);
+      await removeVisitPaymentById(payment.id!);
+
+      ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
+      ref.invalidate(getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
+
+      await Future.delayed(Duration.zero);
+      if (mounted) {
+        AlertUtils.showSnackBarError(
+          context: context,
+          message: AppLocalizations.of(context)!.deleted,
+          second: 3,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AlertUtils.showSnackBarError(
+          context: context,
+          message: AppLocalizations.of(context)!.unsuccessfully,
+          second: 3,
+        );
+      }
+    }
   }
 
   double _calculateTotal(List<VisitPayment> payments) {
