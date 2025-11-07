@@ -41,6 +41,8 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
   late AnimationController _animationController;
   late Animation<double> _animation;
   bool _isCompletingVisit = false;
+  bool _isClearingPayments = false;
+  bool _skipNextWillPop = false;
 
   @override
   void initState() {
@@ -68,277 +70,328 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
       getVisitPaymentsByVisitIDProvider(widget.visitID),
     );
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(
-          lang.creditReport,
-          style: TextStyle(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppFonts.monserratBold,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (_skipNextWillPop) {
+          _skipNextWillPop = false;
+          return;
+        }
+        await _clearAllPayments();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          title: Text(
+            lang.creditReport,
+            style: TextStyle(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppFonts.monserratBold,
+            ),
           ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(
-            IconlyLight.arrow_left_2,
-            color: Colors.white,
-            size: 24.sp,
-          ),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        actions: [
-          AnimatedBuilder(
-            animation: _animation,
-            builder: (context, child) {
-              return Transform.rotate(
-                angle: _animation.value,
-                child: GestureDetector(
-                  onTap: () {
-                    navigatorPushMethod(
-                      context,
-                      CustomerBalanceHistoryPage(
-                        cardCode: widget.cardCode,
-                        visitID: widget.visitID,
-                        afterPayment: false,
-                      ),
-                      false,
-                    );
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.receipt_long,
-                      size: 28.sp,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              );
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Theme.of(context).primaryColor,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: Icon(
+              IconlyLight.arrow_left_2,
+              color: Colors.white,
+              size: 24.sp,
+            ),
+            onPressed: () async {
+              await _handleBackNavigation();
             },
           ),
-        ],
-      ),
-      body: visitPaymentsAsync.when(
-        data: (visitPayments) {
-          return Column(
-            children: [
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).primaryColor,
-                      Theme.of(context).primaryColor,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+          actions: [
+            AnimatedBuilder(
+              animation: _animation,
+              builder: (context, child) {
+                return Transform.rotate(
+                  angle: _animation.value,
+                  child: GestureDetector(
+                    onTap: () {
+                      navigatorPushMethod(
+                        context,
+                        CustomerBalanceHistoryPage(
+                          cardCode: widget.cardCode,
+                          visitID: widget.visitID,
+                          afterPayment: false,
+                        ),
+                        false,
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.receipt_long,
+                        size: 28.sp,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
-                padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
-                child: Column(
-                  children: [
-                    Text(
-                      lang.totalReceived,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppFonts.monserratBold,
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 45.w,
-                          height: 45.h,
-                          child: Lottie.asset(
-                            AssetPath.moneyAnimation,
-                            repeat: false,
-                            fit: BoxFit.contain,
-                            animate: true,
-                          ),
-                        ),
-                        Text(
-                          '${_calculateTotal(visitPayments).toStringAsFixed(2)} TMT',
-                          style: TextStyle(
-                            fontSize: 28.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppFonts.monserratBold,
-                          ),
-                        ),
+                );
+              },
+            ),
+          ],
+        ),
+        body: visitPaymentsAsync.when(
+          data: (visitPayments) {
+            return Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).primaryColor,
+                        Theme.of(context).primaryColor,
                       ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    Text(
-                      '${lang.orderSum} ${visitPayments.length} ${lang.invoice}',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppFonts.monserratBold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: visitPayments.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.receipt_long_outlined,
-                              size: 80.sp,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                            SizedBox(height: 16.h),
-                            Text(
-                              lang.noPaymentMade,
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                color: Theme.of(context).primaryColor,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppFonts.monserratBold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: EdgeInsets.all(16.w),
-                        itemCount: visitPayments.length,
-                        itemBuilder: (context, index) {
-                          final payment = visitPayments[index];
-                          return _buildDismissibleInvoiceCard(
-                            payment,
-                            index,
-                            visitPayments,
-                          );
-                        },
-                      ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  child: Row(
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isCompletingVisit
-                            ? null
-                            : () {
-                                AlertUtils.showScreenAlertDialog(
-                                  context: context,
-                                  message: '${lang.endVisit}?',
-                                  lang: lang,
-                                  onConfirm: () {
-                                    _completeVisit();
-                                  },
-                                );
-                              },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 10.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
-                            elevation: 2,
-                          ),
-                          child: _isCompletingVisit
-                            ? SizedBox(
-                                height: 20.sp,
-                                width: 20.sp,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation(Colors.white),
-                                ),
-                              )
-                            : Text(
-                                lang.endVisit,
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppFonts.monserratBold,
-                                ),
-                              ),
+                      Text(
+                        lang.totalReceived,
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppFonts.monserratBold,
                         ),
                       ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            navigatorPushMethod(
-                              context,
-                              NewInvoiceListPage(
-                                cardCode: widget.cardCode,
-                                visitID: widget.visitID,
-                              ),
-                              false,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).primaryColor,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(vertical: 10.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 45.w,
+                            height: 45.h,
+                            child: Lottie.asset(
+                              AssetPath.moneyAnimation,
+                              repeat: false,
+                              fit: BoxFit.contain,
+                              animate: true,
                             ),
-                            elevation: 2,
                           ),
-                          child: Text(
-                            lang.enterPayment,
+                          Text(
+                            '${_calculateTotal(visitPayments).toStringAsFixed(2)} TMT',
                             style: TextStyle(
-                              fontSize: 16.sp,
+                              fontSize: 28.sp,
+                              color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppFonts.monserratBold,
                             ),
                           ),
+                        ],
+                      ),
+                      Text(
+                        '${lang.orderSum} ${visitPayments.length} ${lang.invoice}',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppFonts.monserratBold,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-        error: (error, stackTrace) => Center(
-          child: Text('Error: ${error.toString()}'),
-        ),
-        loading: () => Center(
-          child: CircularProgressIndicator(
-            color: Theme.of(context).primaryColor,
+                Expanded(
+                  child: visitPayments.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.receipt_long_outlined,
+                                size: 80.sp,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              SizedBox(height: 16.h),
+                              Text(
+                                lang.noPaymentMade,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppFonts.monserratBold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.all(16.w),
+                          itemCount: visitPayments.length,
+                          itemBuilder: (context, index) {
+                            final payment = visitPayments[index];
+                            return _buildDismissibleInvoiceCard(
+                              payment,
+                              index,
+                              visitPayments,
+                            );
+                          },
+                        ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isCompletingVisit
+                              ? null
+                              : () {
+                                  AlertUtils.showScreenAlertDialog(
+                                    context: context,
+                                    message: '${lang.confirmEndVisit}?',
+                                    lang: lang,
+                                    onConfirm: () {
+                                      _completeVisit();
+                                    },
+                                  );
+                                },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 10.h),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: _isCompletingVisit
+                              ? SizedBox(
+                                  height: 20.sp,
+                                  width: 20.sp,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        AlwaysStoppedAnimation(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  lang.endVisit,
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: AppFonts.monserratBold,
+                                  ),
+                                ),
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              navigatorPushMethod(
+                                context,
+                                NewInvoiceListPage(
+                                  cardCode: widget.cardCode,
+                                  visitID: widget.visitID,
+                                ),
+                                false,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 10.h),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: Text(
+                              lang.enterPayment,
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppFonts.monserratBold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+          error: (error, stackTrace) => Center(
+            child: Text('Error: ${error.toString()}'),
+          ),
+          loading: () => Center(
+            child: CircularProgressIndicator(
+              color: Theme.of(context).primaryColor,
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handleBackNavigation() async {
+    final cleared = await _clearAllPayments();
+    if (!cleared) {
+      return;
+    }
+
+    _skipNextWillPop = true;
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<bool> _clearAllPayments() async {
+    if (_isClearingPayments) {
+      return true;
+    }
+
+    _isClearingPayments = true;
+
+    try {
+      await removeVisitPaymentsByVisitID(widget.visitID);
+
+      ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
+      ref.invalidate(getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
+      ref.invalidate(getVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
+      ref.invalidate(getVisitPaymentInvoicesByDocEntryProvider);
+      return true;
+    } catch (error) {
+      if (mounted) {
+        AlertUtils.showSnackBarError(
+          context: context,
+          message: AppLocalizations.of(context)!.unsuccessfully,
+          second: 3,
+        );
+      }
+      return false;
+    } finally {
+      _isClearingPayments = false;
+    }
   }
 
   Widget _buildDismissibleInvoiceCard(
@@ -413,7 +466,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Töleg №${payment.id}',
+                          _buildPaymentTitle(payment),
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
@@ -485,6 +538,37 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
         ),
       ),
     );
+  }
+
+  String _buildPaymentTitle(VisitPayment payment) {
+    final invoices = payment.invoices;
+    if (invoices != null && invoices.isNotEmpty) {
+      final invoiceNumbers = invoices
+          .map((invoice) => invoice.docEntry)
+          .whereType<num>()
+          .where((docEntry) => docEntry != 0)
+          .map(_formatInvoiceNumber)
+          .toSet()
+          .toList();
+
+      if (invoiceNumbers.isNotEmpty) {
+        return '№${invoiceNumbers.join(', ')}';
+      }
+    }
+
+    final paymentId = payment.id;
+    if (paymentId != null) {
+      return '№$paymentId';
+    }
+
+    return AppLocalizations.of(context)!.invoice;
+  }
+
+  String _formatInvoiceNumber(num docEntry) {
+    if (docEntry % 1 == 0) {
+      return docEntry.toInt().toString();
+    }
+    return docEntry.toString();
   }
 
   Future<void> _completeVisit() async {
