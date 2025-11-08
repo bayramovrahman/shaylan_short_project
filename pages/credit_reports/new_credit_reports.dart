@@ -20,6 +20,7 @@ import 'package:shaylan_agent/pages/send/sendqueuewidgets/tradingqueue.dart';
 import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
 import 'package:shaylan_agent/pages/customer_balance_history/customer_balance_history.dart';
 import 'package:shaylan_agent/pages/customers_for_kollektor/last_visit_types/new_invoice_list_page.dart';
+import 'package:shaylan_agent/database/config.dart';
 
 class NewCreditReportsPage extends ConsumerStatefulWidget {
   const NewCreditReportsPage({
@@ -36,13 +37,9 @@ class NewCreditReportsPage extends ConsumerStatefulWidget {
 }
 
 class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> with SingleTickerProviderStateMixin {
-  // Just empty column
-
   late AnimationController _animationController;
   late Animation<double> _animation;
   bool _isCompletingVisit = false;
-  bool _isClearingPayments = false;
-  bool _skipNextWillPop = false;
 
   @override
   void initState() {
@@ -62,6 +59,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
     _animationController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
@@ -71,14 +69,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
     );
 
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (_skipNextWillPop) {
-          _skipNextWillPop = false;
-          return;
-        }
-        await _clearAllPayments();
-      },
+      canPop: true,
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: AppBar(
@@ -100,8 +91,8 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
               color: Colors.white,
               size: 24.sp,
             ),
-            onPressed: () async {
-              await _handleBackNavigation();
+            onPressed: () {
+              Navigator.of(context).pop();
             },
           ),
           actions: [
@@ -353,54 +344,13 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
     );
   }
 
-  Future<void> _handleBackNavigation() async {
-    final cleared = await _clearAllPayments();
-    if (!cleared) {
-      return;
-    }
-
-    _skipNextWillPop = true;
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
-  }
-
-  Future<bool> _clearAllPayments() async {
-    if (_isClearingPayments) {
-      return true;
-    }
-
-    _isClearingPayments = true;
-
-    try {
-      await removeVisitPaymentsByVisitID(widget.visitID);
-
-      ref.invalidate(getVisitPaymentsByVisitIDProvider(widget.visitID));
-      ref.invalidate(getSumVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
-      ref.invalidate(getVisitPaymentInvoicesByCardCodeProvider(widget.cardCode));
-      ref.invalidate(getVisitPaymentInvoicesByDocEntryProvider);
-      return true;
-    } catch (error) {
-      if (mounted) {
-        AlertUtils.showSnackBarError(
-          context: context,
-          message: AppLocalizations.of(context)!.unsuccessfully,
-          second: 3,
-        );
-      }
-      return false;
-    } finally {
-      _isClearingPayments = false;
-    }
-  }
-
   Widget _buildDismissibleInvoiceCard(
     VisitPayment payment,
     int index,
     List<VisitPayment> allPayments,
   ) {
     return Dismissible(
-      key: Key('payment_${payment.id}_${DateTime.now().millisecondsSinceEpoch}'), // Unique key
+      key: Key('payment_${payment.id}_${DateTime.now().millisecondsSinceEpoch}'),
       direction: DismissDirection.startToEnd,
       background: Container(
         margin: EdgeInsets.only(bottom: 12.h),
@@ -465,14 +415,29 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _buildPaymentTitle(payment),
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppFonts.monserratBold,
-                            color: Theme.of(context).primaryColor,
-                          ),
+                        FutureBuilder<String>(
+                          future: _buildPaymentTitle(payment),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return SizedBox(
+                                height: 14.h,
+                                width: 14.w,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              );
+                            }
+                            return Text(
+                              snapshot.data ?? AppLocalizations.of(context)!.invoice,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppFonts.monserratBold,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            );
+                          },
                         ),
                         SizedBox(height: 5.h),
                         Row(
@@ -540,19 +505,23 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
     );
   }
 
-  String _buildPaymentTitle(VisitPayment payment) {
+  Future<String> _buildPaymentTitle(VisitPayment payment) async {
     final invoices = payment.invoices;
     if (invoices != null && invoices.isNotEmpty) {
-      final invoiceNumbers = invoices
+      final docEntries = invoices
           .map((invoice) => invoice.docEntry)
           .whereType<num>()
           .where((docEntry) => docEntry != 0)
-          .map(_formatInvoiceNumber)
           .toSet()
           .toList();
 
-      if (invoiceNumbers.isNotEmpty) {
-        return '№${invoiceNumbers.join(', ')}';
+      if (docEntries.isNotEmpty) {
+        // creditReportLines tablosundan docNum değerlerini al
+        final invoiceNumbers = await _getInvoiceNumbersFromDocEntries(docEntries);
+        
+        if (invoiceNumbers.isNotEmpty) {
+          return '№${invoiceNumbers.join(', ')}';
+        }
       }
     }
 
@@ -561,14 +530,27 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
       return '№$paymentId';
     }
 
+    
     return AppLocalizations.of(context)!.invoice;
   }
 
-  String _formatInvoiceNumber(num docEntry) {
-    if (docEntry % 1 == 0) {
-      return docEntry.toInt().toString();
+  Future<List<String>> _getInvoiceNumbersFromDocEntries(List<num> docEntries) async {
+    if (!db.isOpen) return [];
+    
+    try {
+      final docEntriesString = docEntries.map((e) => e.toString()).join(',');
+      final List<Map<String, dynamic>> result = await db.rawQuery(
+        'SELECT DISTINCT docNum FROM creditReportLines WHERE docEntryInv IN ($docEntriesString) ORDER BY docNum',
+      );
+      
+      return result
+          .map((row) => row['docNum']?.toString() ?? '')
+          .where((num) => num.isNotEmpty)
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching invoice numbers: $e');
+      return [];
     }
-    return docEntry.toString();
   }
 
   Future<void> _completeVisit() async {

@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:iconly/iconly.dart';
+import 'package:flutter/material.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
-import 'package:shaylan_agent/l10n/app_localizations.dart';
 import 'package:shaylan_agent/methods/static_data.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shaylan_agent/l10n/app_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shaylan_agent/models/credit_report_line.dart';
 import 'package:shaylan_agent/providers/database/credit_report_line.dart';
-import 'package:shaylan_agent/pages/customers_for_kollektor/last_visit_types/new_invoice_card_page.dart';
 import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
+import 'package:shaylan_agent/pages/customers_for_kollektor/last_visit_types/new_invoice_card_page.dart';
 
 class NewInvoiceListPage extends ConsumerWidget {
   const NewInvoiceListPage({
