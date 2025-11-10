@@ -5,10 +5,15 @@ import 'package:shaylan_agent/models/customer_credit_report.dart';
 import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
 
 class KollektorCustomersTableRows extends ConsumerWidget {
-  const KollektorCustomersTableRows({super.key, required this.ccrs});
+  const KollektorCustomersTableRows({
+    super.key,
+    required this.ccrs,
+    required this.visitType,
+  });
 
   final List<CustomerCreditReport> ccrs;
-
+  final String visitType;
+  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Expanded(
@@ -43,16 +48,23 @@ class KollektorCustomersTableRows extends ConsumerWidget {
                       border: Border(bottom: BorderSide()),
                     ),
                     children: [
-                      customersTableRowMethod(e.cardName, context, e.cardCode),
+                      customersTableRowMethod(
+                        e.cardName, 
+                        context, 
+                        e.cardCode, 
+                        visitType: visitType,
+                      ),
                       customersTableRowMethod(
                         sumBalance.toStringAsFixed(2),
                         context,
                         e.cardCode,
+                        visitType: visitType
                       ),
                       customersTableRowMethod(
                         '${e.expiredDay ?? 0}',
                         context,
                         e.cardCode,
+                        visitType: visitType
                       ),
                     ],
                   );

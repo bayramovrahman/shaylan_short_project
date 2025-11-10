@@ -10,9 +10,14 @@ import 'package:shaylan_agent/methods/timed_circular_loader.dart';
 import 'package:shaylan_agent/providers/pages/customers.dart';
 
 class StartVisitButton extends ConsumerWidget {
-  const StartVisitButton({super.key, required this.cardCode});
+  const StartVisitButton({
+    super.key,
+    required this.cardCode,
+    required this.visitType,
+  });
 
   final String cardCode;
+  final String visitType;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,7 +37,7 @@ class StartVisitButton extends ConsumerWidget {
 
               do {
                 if (await hasLocationPermission() && context.mounted) {
-                  await startVisit(cardCode, ref, context);
+                  await startVisit(cardCode, ref, context, visitType: visitType);
                   return;
                 }
 
@@ -41,7 +46,7 @@ class StartVisitButton extends ConsumerWidget {
                     if ((value == LocationPermission.always ||
                             value == LocationPermission.whileInUse) &&
                         context.mounted) {
-                      await startVisit(cardCode, ref, context);
+                      await startVisit(cardCode, ref, context, visitType: visitType);
                       return;
                     }
                   },

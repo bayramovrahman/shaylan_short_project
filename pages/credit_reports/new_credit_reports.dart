@@ -109,6 +109,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
                           cardCode: widget.cardCode,
                           visitID: widget.visitID,
                           afterPayment: false,
+                          visitType: "newVisitType",
                         ),
                         false,
                       );
@@ -530,7 +531,7 @@ class _NewCreditReportsPageState extends ConsumerState<NewCreditReportsPage> wit
       return '№$paymentId';
     }
 
-    
+
     return AppLocalizations.of(context)!.invoice;
   }
 

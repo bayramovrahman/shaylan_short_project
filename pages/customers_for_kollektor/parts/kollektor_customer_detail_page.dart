@@ -13,19 +13,19 @@ import 'package:shaylan_agent/pages/customers/parts/customer_current_location.da
 
 class KollektorCustomerDetailPage extends StatefulWidget {
   final CustomerByCardCode kollektorCustomer;
+  final String visitType;
 
   const KollektorCustomerDetailPage({
     super.key,
     required this.kollektorCustomer,
+    required this.visitType,
   });
 
   @override
-  State<KollektorCustomerDetailPage> createState() =>
-      _KollektorCustomerDetailPageState();
+  State<KollektorCustomerDetailPage> createState() => _KollektorCustomerDetailPageState();
 }
 
-class _KollektorCustomerDetailPageState
-    extends State<KollektorCustomerDetailPage> {
+class _KollektorCustomerDetailPageState extends State<KollektorCustomerDetailPage> {
   // Just empty column
 
   late String _latitude;
@@ -218,7 +218,7 @@ class _KollektorCustomerDetailPageState
           onPressed: () async {
             bool hasPermission = await hasLocationPermission();
             if (context.mounted) {
-              showStartVisitDialog(context, hasPermission, customer.cardCode!);
+              showStartVisitDialog(context, hasPermission, customer.cardCode!, visitType: widget.visitType);
             }
           },
           style: ElevatedButton.styleFrom(

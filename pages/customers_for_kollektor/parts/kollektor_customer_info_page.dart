@@ -1,29 +1,30 @@
 import 'package:iconly/iconly.dart';
 import 'package:flutter/material.dart';
-import 'package:shaylan_agent/database/functions/customer.dart';
-import 'package:shaylan_agent/models/customer_by_card_code.dart';
 import 'package:shaylan_agent/models/user.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shaylan_agent/utilities/error_utils.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shaylan_agent/database/functions/customer.dart';
+import 'package:shaylan_agent/models/customer_by_card_code.dart';
 import 'package:shaylan_agent/pages/customers_for_kollektor/parts/kollektor_customer_detail_page.dart';
 
 class KollektorCustomerInfoPage extends ConsumerStatefulWidget {
   final String cardCode;
+  final String visitType;
 
   const KollektorCustomerInfoPage({
     super.key,
     required this.cardCode,
+    required this.visitType,
   });
 
   @override
-  ConsumerState<KollektorCustomerInfoPage> createState() =>
-      _KollektorCustomerInfoPageState();
+  ConsumerState<KollektorCustomerInfoPage> createState() => _KollektorCustomerInfoPageState();
 }
 
-class _KollektorCustomerInfoPageState
-    extends ConsumerState<KollektorCustomerInfoPage> {
+class _KollektorCustomerInfoPageState extends ConsumerState<KollektorCustomerInfoPage> {
   // Just empty column
 
   bool hasInternetConnection = false;
@@ -39,8 +40,7 @@ class _KollektorCustomerInfoPageState
   }
 
   Future<void> loadCustomerFromCardCodeDb() async {
-    CustomerByCardCode? result =
-        await getCustomerByCardCodeLocal(widget.cardCode);
+    CustomerByCardCode? result = await getCustomerByCardCodeLocal(widget.cardCode);
     setState(() {
       customer = result;
       isLoading = false;
@@ -50,7 +50,6 @@ class _KollektorCustomerInfoPageState
   @override
   Widget build(BuildContext context) {
     var lang = AppLocalizations.of(context)!;
-    // debugPrint("Token: $token");
     if (isLoading) {
       return Scaffold(
         body: Center(
@@ -70,10 +69,11 @@ class _KollektorCustomerInfoPageState
         backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        centerTitle: false,
+        centerTitle: true,
         title: Text(
           lang.infoCustomer,
           style: TextStyle(
+            fontSize: 18.sp,
             fontFamily: AppFonts.secondaryFont,
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -81,7 +81,7 @@ class _KollektorCustomerInfoPageState
         ),
         leading: IconButton(
           icon: const Icon(
-            IconlyLight.arrow_left_circle,
+            IconlyLight.arrow_left_2,
             color: Colors.white,
             size: 32.0,
           ),
@@ -90,7 +90,7 @@ class _KollektorCustomerInfoPageState
           },
         ),
       ),
-      body: KollektorCustomerDetailPage(kollektorCustomer: customer!),
+      body: KollektorCustomerDetailPage(kollektorCustomer: customer!, visitType: widget.visitType,),
     );
   }
 

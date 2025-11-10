@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:shaylan_agent/providers/pages/customers.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
@@ -42,12 +43,12 @@ class KollektorCustomersTableRemainHead extends ConsumerWidget {
               lang.remainder,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontFamily: AppFonts.secondaryFont,
+                fontFamily: AppFonts.monserratBold,
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 10.0),
+            SizedBox(height: 5.h),
             Icon(icon, color: Colors.white),
           ],
         ),
