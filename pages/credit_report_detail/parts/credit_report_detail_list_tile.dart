@@ -1,28 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shaylan_agent/app/app_fonts.dart';
 
 class CreditReportDetailListTile extends StatelessWidget {
-  const CreditReportDetailListTile(
-      {super.key, required this.text, required this.value});
+  const CreditReportDetailListTile({super.key, required this.text, required this.value});
 
   final String text, value;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: EdgeInsets.symmetric(vertical: 3.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             text,
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
               color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppFonts.monserratBold,
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 8.w),
           Expanded(
-            child: Text(value, style: const TextStyle(color: Colors.white)),
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: AppFonts.monserratBold,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),

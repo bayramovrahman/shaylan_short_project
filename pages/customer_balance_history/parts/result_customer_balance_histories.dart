@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:shaylan_agent/methods/static_data.dart';
 import 'package:shaylan_agent/models/customer_balance_history.dart';
@@ -19,13 +20,8 @@ class ResultCustomerBalanceHistories extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     var lang = AppLocalizations.of(context)!;
-
-    AsyncValue<ResultCustomerBalanceHistory> resultCustomerBalanceHistory =
-        ref.watch(getAllCustomerBalanceHistoriesProvider(cardCode));
-
-    AsyncValue<num> visitPayments =
-        ref.watch(getSumVisitPaymentInvoicesByCardCodeProvider(cardCode));
-
+    AsyncValue<ResultCustomerBalanceHistory> resultCustomerBalanceHistory = ref.watch(getAllCustomerBalanceHistoriesProvider(cardCode));
+    AsyncValue<num> visitPayments = ref.watch(getSumVisitPaymentInvoicesByCardCodeProvider(cardCode));
     return resultCustomerBalanceHistory.when(
       data: (data) {
         if (data.error != '') {
@@ -79,87 +75,89 @@ class ResultCustomerBalanceHistories extends ConsumerWidget {
           children: [
             visitPayments.when(
               data: (response) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Card(
-                    color: Colors.blue.shade400,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '${lang.totalAmountRemainder} : ',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppFonts.monserratBold,
-                                ),
+                return Card(
+                  color: Theme.of(context).primaryColor,
+                  elevation: 0,
+                  margin: EdgeInsets.zero,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${lang.totalAmountRemainder} : ',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppFonts.monserratBold,
                               ),
-                              Text(
-                                "${sumBalanceDue.toStringAsFixed(2)} ${lang.manat}",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppFonts.monserratBold,
-                                  letterSpacing: 0.3,
-                                ),
+                            ),
+                            Text(
+                              "${sumBalanceDue.toStringAsFixed(2)} ${lang.manat}",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppFonts.monserratBold,
+                                letterSpacing: 0.3,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          response != 0
-                              ? Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '${lang.assigned} : ',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppFonts.monserratBold,
-                                      ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        response != 0
+                            ? Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${lang.assigned} : ',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: AppFonts.monserratBold,
                                     ),
-                                    Text(
-                                      "${response.toStringAsFixed(2)} ${lang.manat}",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppFonts.monserratBold,
-                                      ),
+                                  ),
+                                  Text(
+                                    "${response.toStringAsFixed(2)} ${lang.manat}",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: AppFonts.monserratBold,
                                     ),
-                                  ],
-                                )
-                              : const SizedBox.shrink(),
-                          const SizedBox(height: 10),
-                          response != 0
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      '${lang.remainder} : ',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppFonts.monserratBold,
-                                      ),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
+                        const SizedBox(height: 10),
+                        response != 0
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${lang.remainder} : ',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: AppFonts.monserratBold,
                                     ),
-                                    Text(
-                                      "${(sumBalanceDue - response).toStringAsFixed(2)} ${lang.manat}",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppFonts.monserratBold,
-                                      ),
+                                  ),
+                                  Text(
+                                    "${(sumBalanceDue - response).toStringAsFixed(2)} ${lang.manat}",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: AppFonts.monserratBold,
                                     ),
-                                  ],
-                                )
-                              : const SizedBox.shrink(),
-                        ],
-                      ),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
+                      ],
                     ),
                   ),
                 );

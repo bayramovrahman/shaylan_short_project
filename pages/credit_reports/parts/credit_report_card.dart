@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shaylan_agent/methods/gridview.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shaylan_agent/methods/static_data.dart';
+import 'package:shaylan_agent/l10n/app_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shaylan_agent/models/credit_report_line.dart';
 import 'package:shaylan_agent/models/visit_payment_invoice.dart';
-import 'package:shaylan_agent/pages/credit_report_detail/credit_report_detail.dart';
-import 'package:shaylan_agent/pages/credit_report_detail/parts/credit_report_detail_list_tile.dart';
-import 'package:shaylan_agent/l10n/app_localizations.dart';
-import 'package:shaylan_agent/pages/credit_reports/parts/credit_report_pay_line.dart';
 import 'package:shaylan_agent/providers/database/visit_payment_invoice.dart';
+import 'package:shaylan_agent/pages/credit_report_detail/credit_report_detail.dart';
+import 'package:shaylan_agent/pages/credit_reports/parts/credit_report_pay_line.dart';
+import 'package:shaylan_agent/pages/credit_report_detail/parts/credit_report_detail_list_tile.dart';
 
 class CreditReportCard extends ConsumerWidget {
-  const CreditReportCard(
-      {super.key, required this.creditReportLine, this.visitID});
+  const CreditReportCard({super.key, required this.creditReportLine, this.visitID});
 
   final CreditReportLine creditReportLine;
   final int? visitID;
@@ -42,7 +42,7 @@ class CreditReportCard extends ConsumerWidget {
               .map(
                 (e) => CreditReportDetailListTile(
                   text: lang.paid,
-                  value: '${e.sumApplied} man',
+                  value: '${e.sumApplied} ${lang.manat}',
                 ),
               )
               .toList();
@@ -65,38 +65,40 @@ class CreditReportCard extends ConsumerWidget {
             CreditReportDetailPage(creditReportLine: creditReportLine),
             false,
           ),
-          child: Card(
-            color: Colors.green,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  CreditReportDetailListTile(
-                    text: lang.documentNumber,
-                    value: '${creditReportLine.docNum}',
-                  ),
-                  CreditReportDetailListTile(
-                    text: lang.loanAmount,
-                    value: '${creditReportLine.creditSum} man',
-                  ),
-                  CreditReportDetailListTile(
-                    text: lang.paymentOption,
-                    value: creditReportLine.paymentType,
-                  ),
-                  CreditReportDetailListTile(
-                    text: lang.expiredDay,
-                    value: '${creditReportLine.expired}',
-                  ),
-                  CreditReportDetailListTile(
-                    text: lang.remainder,
-                    value:
-                        '${crl.balance} man', //change creditReportLine to crl
-                  ),
-                  ...visitPaymentInvoices,
-                  visitID != null
-                      ? CreditReportPayLine(creditReportLine: crl)
-                      : const SizedBox.shrink(),
-                ],
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 8.w),
+            child: Card(
+              color: Colors.blue.shade400,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    CreditReportDetailListTile(
+                      text: '${lang.documentNumber}:',
+                      value: '${creditReportLine.docNum}',
+                    ),
+                    CreditReportDetailListTile(
+                      text: '${lang.loanAmount}:',
+                      value: '${creditReportLine.creditSum} ${lang.manat}',
+                    ),
+                    CreditReportDetailListTile(
+                      text: '${lang.paymentOption}:',
+                      value: creditReportLine.paymentType,
+                    ),
+                    CreditReportDetailListTile(
+                      text: '${lang.expiredDay}:',
+                      value: '${creditReportLine.expired}',
+                    ),
+                    CreditReportDetailListTile(
+                      text: '${lang.remainder}:',
+                      value: '${crl.balance} ${lang.manat}',
+                    ),
+                    ...visitPaymentInvoices,
+                    visitID != null
+                        ? CreditReportPayLine(creditReportLine: crl)
+                        : const SizedBox.shrink(),
+                  ],
+                ),
               ),
             ),
           ),

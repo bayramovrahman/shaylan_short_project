@@ -10,9 +10,14 @@ import 'package:shaylan_agent/pages/customers_for_kollektor/parts/filter_distric
 import 'package:shaylan_agent/pages/customers_for_kollektor/parts/result_customers_for_kollektor.dart';
 
 class CustomersForKollektorPage extends ConsumerWidget {
-  const CustomersForKollektorPage({super.key, this.root});
+  const CustomersForKollektorPage({
+    super.key,
+    this.root,
+    required this.visitType,
+  });
 
   final String? root;
+  final String visitType;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,7 +57,7 @@ class CustomersForKollektorPage extends ConsumerWidget {
           FilterDistrictButton(root: root ?? ''),
         ],
       ),
-      body: ResultCustomersForKollektor(root: root),
+      body: ResultCustomersForKollektor(root: root, visitType: visitType),
     );
   }
 }

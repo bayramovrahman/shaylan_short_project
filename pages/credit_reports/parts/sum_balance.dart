@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shaylan_agent/app/app_fonts.dart';
 import 'package:shaylan_agent/methods/static_data.dart';
 import 'package:shaylan_agent/models/credit_report_line.dart';
 import 'package:shaylan_agent/l10n/app_localizations.dart';
@@ -32,8 +34,8 @@ class SumBalance extends ConsumerWidget {
     return sumVisitPaymentInvoices.when(
       data: (data) {
         return Container(
-          color: Colors.blue,
-          padding: const EdgeInsets.all(10),
+          color: Theme.of(context).primaryColor,
+          padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
           child: Column(
             children: [
               Row(
@@ -45,13 +47,15 @@ class SumBalance extends ConsumerWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontFamily: AppFonts.monserratBold,
                     ),
                   ),
                   Text(
-                    '${sumBalance.toStringAsFixed(2)} man',
+                    '${sumBalance.toStringAsFixed(2)} ${lang.manat}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontFamily: AppFonts.monserratBold,
                     ),
                   ),
                 ],
@@ -61,18 +65,20 @@ class SumBalance extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${lang.paid} :',
+                          '${lang.statusSent} :',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontFamily: AppFonts.monserratBold,
                           ),
                         ),
                         Text(
-                          '$data man',
+                          '${data.toStringAsFixed(2)} ${lang.manat}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontFamily: AppFonts.monserratBold,
                           ),
                         ),
                       ],
@@ -88,13 +94,15 @@ class SumBalance extends ConsumerWidget {
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontFamily: AppFonts.monserratBold,
                           ),
                         ),
                         Text(
-                          '${(sumBalance - data).toStringAsFixed(2)} man',
+                          '${(sumBalance - data).toStringAsFixed(2)} ${lang.manat}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontFamily: AppFonts.monserratBold,
                           ),
                         ),
                       ],

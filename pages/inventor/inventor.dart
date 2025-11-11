@@ -7,8 +7,11 @@ import 'package:shaylan_agent/pages/inventor/parts/inventor_agrement.dart';
 import 'package:shaylan_agent/pages/visit_step_one.dart';
 
 class InventorPage extends StatelessWidget {
-  const InventorPage(
-      {super.key, required this.visitID, required this.cardCode});
+  const InventorPage({
+    super.key,
+    required this.visitID,
+    required this.cardCode,
+  });
 
   final int visitID;
   final String cardCode;
@@ -17,7 +20,6 @@ class InventorPage extends StatelessWidget {
   Widget build(BuildContext context) {
     debugPrint("-----------onInventorPage");
     var lang = AppLocalizations.of(context)!;
-
     return Scaffold(
       appBar: AppBar(),
       body: Column(
@@ -37,7 +39,10 @@ class InventorPage extends StatelessWidget {
                   await updateVisitHasInventor(0);
                   if (context.mounted) {
                     navigatorPushMethod(
-                        context, VisitStepOnePage(visitID: visitID), false);
+                      context,
+                      VisitStepOnePage(visitID: visitID),
+                      false,
+                    );
                   }
                 },
               ),
